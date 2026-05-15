@@ -273,6 +273,7 @@ th {
 
       <input id="customTitle" placeholder="Custom Report Title (optional)">
       <button onclick="generateReports()">Generate Reports</button>
+        <button onclick="downloadAllJPG()">Download JPG ZIP</button>
       <button onclick="downloadAllExcel()">Download Excel ZIP</button>
       <button onclick="downloadAllPDF()">Download PDF ZIP</button>
       <button class="secondary" onclick="window.print()">Print</button>
@@ -507,7 +508,36 @@ function populateFilters() {
 }
 
 // Generate reports
+async function downloadAllJPG() {
+  if (Object.keys(groupedData).length === 0) {
+    alert('No reports generated.');
+    return;
+  }
 
+  const zip = new JSZip();
+  const sections = document.querySelectorAll('.summary-sheet');
+
+  for (const section of sections) {
+    const title = section.querySelector('.title')
+      .textContent
+      .replace(/[\\/:*?"<>|]/g, '_');
+
+    const canvas = await html2canvas(section, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff'
+    });
+
+    const blob = await new Promise(resolve =>
+      canvas.toBlob(resolve, 'image/jpeg', 0.95)
+    );
+
+    zip.file(`${title}.jpg`, blob);
+  }
+
+  const zipBlob = await zip.generateAsync({ type: 'blob' });
+  saveBlob(zipBlob, 'Stock_Summaries_JPG.zip');
+}
 function generateReports() {
   if (rawRows.length === 0) {
     alert('Please upload a file first.');

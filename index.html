@@ -63,90 +63,177 @@ const fileInput = document.getElementById('fileInput');
 const dropZone = document.getElementById('dropZone');
 const output = document.getElementById('output');
 
-dropZone.onclick = () => fileInput.click();
-fileInput.onchange = e => handleFile(e.target.files[0]);
+// Show selected file name
+function showFileName(name) {
+  dropZone.innerHTML = `
+    <strong>Selected File:</strong><br>
+    ${name}
+    <br><br>
+    <small>Click or drop another file to replace it.</small>
+    <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
+  `;
+  document.getElementById('fileInput').addEventListener('change', e => {
+    if (e.target.files[0]) handleFile(e.target.files[0]);
+  });
+}
 
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('click', () => fileInput.click());
+
+dropZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+
+dropZone.addEventListener('dragleave', () => {
+  dropZone.classList.remove('dragover');
+});
+
 dropZone.addEventListener('drop', e => {
   e.preventDefault();
   dropZone.classList.remove('dragover');
-  handleFile(e.dataTransfer.files[0]);
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
 });
 
+fileInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (file) handleFile(file);
+});
+
+// Convert Excel date to year
 function excelDateToYear(value) {
-  if (!value) return '';
+  if (!value) return new Date().getFullYear();
+
   if (typeof value === 'number') {
     const d = XLSX.SSF.parse_date_code(value);
-    return d ? d.y : '';
+    return d ? d.y : new Date().getFullYear();
   }
+
   const dt = new Date(value);
-  return isNaN(dt) ? '' : dt.getFullYear();
+  return isNaN(dt) ? new Date().getFullYear() : dt.getFullYear();
 }
 
+// Normalize row
 function normalizeRow(r) {
-  const year = excelDateToYear(r.Date) || new Date().getFullYear();
   return {
     subdealer: r.Subdealer || '',
     vehicle: r.Vehicle || '',
     chassis: r['Chassis Number'] || '',
     engine: r['Engine Number'] || '',
     colour: r.Colour || '',
-    year
+    year: excelDateToYear(r.Date)
   };
 }
 
+// Extract model name
 function extractModel(vehicle) {
   const v = (vehicle || '').toUpperCase();
-  const patterns = ['ZEST','RAIDER','JUPITER','NTORQ','APACHE','RONIN','SPORT','XL100','RADIAN'];
-  for (const p of patterns) if (v.includes(p)) return p;
-  return v.split(/\s+/).slice(0,3).join(' ');
+
+  const patterns = [
+    'ZEST',
+    'RAIDER',
+    'JUPITER',
+    'NTORQ',
+    'APACHE',
+    'RONIN',
+    'SPORT',
+    'XL100',
+    'RADIAN'
+  ];
+
+  for (const p of patterns) {
+    if (v.includes(p)) return p;
+  }
+
+  return v.split(/\s+/).slice(0, 3).join(' ');
 }
 
+// Handle uploaded file
 function handleFile(file) {
+  if (!file) return;
+
+  showFileName(file.name);
+
   const reader = new FileReader();
-  reader.onload = e => {
-    const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    let rows = XLSX.utils.sheet_to_json(ws, {defval:''});
 
-    // If headers are not in first row, try starting at row 4.
-    if (!rows.length || !('Vehicle' in rows[0])) {
-      rows = XLSX.utils.sheet_to_json(ws, {range:3, defval:''});
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+      let rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+      // If Vehicle column missing, try starting from row 4
+      if (!rows.length || !('Vehicle' in rows[0])) {
+        rows = XLSX.utils.sheet_to_json(sheet, {
+          range: 3,
+          defval: ''
+        });
+      }
+
+      rawRows = rows
+        .map(normalizeRow)
+        .filter(r => r.vehicle && r.chassis);
+
+      if (rawRows.length === 0) {
+        alert('No valid stock records found in the Excel file.');
+        return;
+      }
+
+      populateFilters();
+      generateReports();
+
+      alert(`${rawRows.length} records loaded successfully.`);
+    } catch (err) {
+      console.error(err);
+      alert('Error reading Excel file.');
     }
-
-    rawRows = rows.map(normalizeRow).filter(r => r.vehicle && r.chassis);
-    populateFilters();
-    generateReports();
   };
+
   reader.readAsArrayBuffer(file);
 }
 
+// Populate filters
 function populateFilters() {
-  const years = [...new Set(rawRows.map(r => r.year))].sort();
-  const branches = [...new Set(rawRows.map(r => r.subdealer))].sort();
-
   const yearFilter = document.getElementById('yearFilter');
   const branchFilter = document.getElementById('branchFilter');
+
+  const years = [...new Set(rawRows.map(r => r.year))].sort();
+  const branches = [...new Set(rawRows.map(r => r.subdealer))].sort();
 
   yearFilter.innerHTML = '<option value="">All Years</option>';
   branchFilter.innerHTML = '<option value="">All Branches</option>';
 
-  years.forEach(y => yearFilter.innerHTML += `<option value="${y}">${y}</option>`);
-  branches.forEach(b => branchFilter.innerHTML += `<option value="${b}">${b}</option>`);
+  years.forEach(y => {
+    yearFilter.innerHTML += `<option value="${y}">${y}</option>`;
+  });
+
+  branches.forEach(b => {
+    branchFilter.innerHTML += `<option value="${b}">${b}</option>`;
+  });
 }
 
+// Generate reports
 function generateReports() {
+  if (rawRows.length === 0) {
+    alert('Please upload a file first.');
+    return;
+  }
+
   const year = document.getElementById('yearFilter').value;
   const branch = document.getElementById('branchFilter').value;
-  const customTitle = document.getElementById('customTitle').value.trim();
+  const customTitle =
+    document.getElementById('customTitle').value.trim();
 
-  let rows = rawRows.filter(r =>
+  const rows = rawRows.filter(r =>
     (!year || String(r.year) === year) &&
     (!branch || r.subdealer === branch)
   );
 
   groupedData = {};
+
   rows.forEach(r => {
     const key = `${extractModel(r.vehicle)}|${r.year}`;
     if (!groupedData[key]) groupedData[key] = [];
@@ -155,95 +242,149 @@ function generateReports() {
 
   output.innerHTML = '';
 
-  Object.keys(groupedData).sort().forEach(key => {
+  const keys = Object.keys(groupedData);
+
+  if (keys.length === 0) {
+    output.innerHTML =
+      '<p style="text-align:center;font-weight:bold;">No records found.</p>';
+    return;
+  }
+
+  keys.sort().forEach(key => {
     const [model, yr] = key.split('|');
     const title = customTitle || `${model} ${yr} MODEL STOCK`;
 
     const section = document.createElement('div');
     section.className = 'summary-sheet';
 
-    let html = `<div class="title">${title}</div>`;
-    html += `<table><thead><tr>
-      <th>SNo</th>
-      <th>Subdealer</th>
-      <th>Vehicle</th>
-      <th>Chassis Number</th>
-      <th>Engine Number</th>
-      <th>Colour</th>
-      <th>Year Of Model</th>
-    </tr></thead><tbody>`;
+    let html = `
+      <div class="title">${title}</div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>SNo</th>
+            <th>Subdealer</th>
+            <th>Vehicle</th>
+            <th>Chassis Number</th>
+            <th>Engine Number</th>
+            <th>Colour</th>
+            <th>Year Of Model</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
 
     groupedData[key].forEach((r, i) => {
-      html += `<tr>
-        <td>${i+1}</td>
-        <td>${r.subdealer}</td>
-        <td>${r.vehicle}</td>
-        <td>${r.chassis}</td>
-        <td>${r.engine}</td>
-        <td>${r.colour}</td>
-        <td>${r.year}</td>
-      </tr>`;
+      html += `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${r.subdealer}</td>
+          <td>${r.vehicle}</td>
+          <td>${r.chassis}</td>
+          <td>${r.engine}</td>
+          <td>${r.colour}</td>
+          <td>${r.year}</td>
+        </tr>
+      `;
     });
 
-    html += `</tbody></table>`;
+    html += '</tbody></table>';
+
     section.innerHTML = html;
     output.appendChild(section);
   });
 }
 
+// Download Excel ZIP
 async function downloadAllExcel() {
+  if (Object.keys(groupedData).length === 0) {
+    alert('No reports generated.');
+    return;
+  }
+
   const zip = new JSZip();
 
   for (const [key, rows] of Object.entries(groupedData)) {
     const [model, yr] = key.split('|');
-    const ws = XLSX.utils.json_to_sheet(rows.map((r, i) => ({
-      SNo: i + 1,
-      Subdealer: r.subdealer,
-      Vehicle: r.vehicle,
-      'Chassis Number': r.chassis,
-      'Engine Number': r.engine,
-      Colour: r.colour,
-      'Year Of Model': r.year
-    })));
+
+    const ws = XLSX.utils.json_to_sheet(
+      rows.map((r, i) => ({
+        SNo: i + 1,
+        Subdealer: r.subdealer,
+        Vehicle: r.vehicle,
+        'Chassis Number': r.chassis,
+        'Engine Number': r.engine,
+        Colour: r.colour,
+        'Year Of Model': r.year
+      }))
+    );
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Summary');
-    const array = XLSX.write(wb, {bookType:'xlsx', type:'array'});
-    zip.file(`${model}_${yr}.xlsx`, array);
+
+    const data = XLSX.write(wb, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    zip.file(`${model}_${yr}.xlsx`, data);
   }
 
-  const blob = await zip.generateAsync({type:'blob'});
+  const blob = await zip.generateAsync({ type: 'blob' });
   saveBlob(blob, 'Stock_Summaries_Excel.zip');
 }
 
+// Download PDF ZIP
 async function downloadAllPDF() {
+  if (Object.keys(groupedData).length === 0) {
+    alert('No reports generated.');
+    return;
+  }
+
   const zip = new JSZip();
-  const sections = document.querySelectorAll('.summary-sheet');
+  const sections =
+    document.querySelectorAll('.summary-sheet');
 
   for (const section of sections) {
-    const title = section.querySelector('.title').textContent.replace(/[\\/:*?"<>|]/g, '_');
-    const canvas = await html2canvas(section, {scale: 2});
+    const title = section
+      .querySelector('.title')
+      .textContent.replace(/[\\/:*?"<>|]/g, '_');
+
+    const canvas = await html2canvas(section, {
+      scale: 2
+    });
+
     const imgData = canvas.toDataURL('image/png');
 
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('l', 'pt', 'a4');
+
     const width = pdf.internal.pageSize.getWidth();
-    const height = canvas.height * width / canvas.width;
+    const height =
+      canvas.height * width / canvas.width;
+
     pdf.addImage(imgData, 'PNG', 0, 0, width, height);
 
     zip.file(`${title}.pdf`, pdf.output('arraybuffer'));
   }
 
-  const blob = await zip.generateAsync({type:'blob'});
+  const blob = await zip.generateAsync({
+    type: 'blob'
+  });
+
   saveBlob(blob, 'Stock_Summaries_PDF.zip');
 }
 
+// Save file
 function saveBlob(blob, filename) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(a.href);
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 </script>
+
 </body>
 </html>

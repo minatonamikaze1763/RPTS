@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Advanced Stock Summary Generator</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+body { font-family: Arial, sans-serif; margin:0; background:#f5f5f5; }
+.container { max-width: 1400px; margin:auto; padding:20px; }
+h1 { text-align:center; }
+.panel { background:white; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.1); margin-bottom:20px; }
+.drop-zone { border:3px dashed #999; padding:30px; text-align:center; border-radius:10px; cursor:pointer; }
+.drop-zone.dragover { background:#eef6ff; border-color:#0d6efd; }
+.controls { display:flex; gap:10px; flex-wrap:wrap; margin-top:15px; }
+button, select, input { padding:10px 14px; border-radius:8px; border:1px solid #ccc; }
+button { background:#0d6efd; color:white; border:none; cursor:pointer; }
+button.secondary { background:#6c757d; }
+.summary-sheet { background:white; margin:30px 0; box-shadow:0 2px 8px rgba(0,0,0,.1); page-break-after:always; }
+.title { background:#fff200; font-size:32px; font-weight:bold; text-align:center; padding:15px; text-transform:uppercase; }
+table { width:100%; border-collapse:collapse; }
+th, td { border:1px solid #000; padding:6px; font-size:13px; text-align:center; }
+th { background:#eaeaea; }
+.hidden { display:none; }
+@media print {
+  .panel { display:none; }
+  .summary-sheet { box-shadow:none; margin:0; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Advanced Stock Summary Generator</h1>
+
+  <div class="panel">
+    <div id="dropZone" class="drop-zone">
+      Drag & Drop Excel File Here or Click to Select
+      <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
+    </div>
+
+    <div class="controls">
+      <select id="yearFilter"><option value="">All Years</option></select>
+      <select id="branchFilter"><option value="">All Branches</option></select>
+      <input id="customTitle" placeholder="Custom Report Title (optional)">
+      <button onclick="generateReports()">Generate Reports</button>
+      <button onclick="downloadAllExcel()">Download Excel ZIP</button>
+      <button onclick="downloadAllPDF()">Download PDF ZIP</button>
+      <button class="secondary" onclick="window.print()">Print</button>
+    </div>
+  </div>
+
+  <div id="output"></div>
+</div>
+
+<script>
+let rawRows = [];
+let groupedData = {};
+
+const fileInput = document.getElementById('fileInput');
+const dropZone = document.getElementById('dropZone');
+const output = document.getElementById('output');
+
+dropZone.onclick = () => fileInput.click();
+fileInput.onchange = e => handleFile(e.target.files[0]);
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  handleFile(e.dataTransfer.files[0]);
+});
+
+function excelDateToYear(value) {
+  if (!value) return '';
+  if (typeof value === 'number') {
+    const d = XLSX.SSF.parse_date_code(value);
+    return d ? d.y : '';
+  }
+  const dt = new Date(value);
+  return isNaN(dt) ? '' : dt.getFullYear();
+}
+
+function normalizeRow(r) {
+  const year = excelDateToYear(r.Date) || new Date().getFullYear();
+  return {
+    subdealer: r.Subdealer || '',
+    vehicle: r.Vehicle || '',
+    chassis: r['Chassis Number'] || '',
+    engine: r['Engine Number'] || '',
+    colour: r.Colour || '',
+    year
+  };
+}
+
+function extractModel(vehicle) {
+  const v = (vehicle || '').toUpperCase();
+  const patterns = ['ZEST','RAIDER','JUPITER','NTORQ','APACHE','RONIN','SPORT','XL100','RADIAN'];
+  for (const p of patterns) if (v.includes(p)) return p;
+  return v.split(/\s+/).slice(0,3).join(' ');
+}
+
+function handleFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    let rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+
+    // If headers are not in first row, try starting at row 4.
+    if (!rows.length || !('Vehicle' in rows[0])) {
+      rows = XLSX.utils.sheet_to_json(ws, {range:3, defval:''});
+    }
+
+    rawRows = rows.map(normalizeRow).filter(r => r.vehicle && r.chassis);
+    populateFilters();
+    generateReports();
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function populateFilters() {
+  const years = [...new Set(rawRows.map(r => r.year))].sort();
+  const branches = [...new Set(rawRows.map(r => r.subdealer))].sort();
+
+  const yearFilter = document.getElementById('yearFilter');
+  const branchFilter = document.getElementById('branchFilter');
+
+  yearFilter.innerHTML = '<option value="">All Years</option>';
+  branchFilter.innerHTML = '<option value="">All Branches</option>';
+
+  years.forEach(y => yearFilter.innerHTML += `<option value="${y}">${y}</option>`);
+  branches.forEach(b => branchFilter.innerHTML += `<option value="${b}">${b}</option>`);
+}
+
+function generateReports() {
+  const year = document.getElementById('yearFilter').value;
+  const branch = document.getElementById('branchFilter').value;
+  const customTitle = document.getElementById('customTitle').value.trim();
+
+  let rows = rawRows.filter(r =>
+    (!year || String(r.year) === year) &&
+    (!branch || r.subdealer === branch)
+  );
+
+  groupedData = {};
+  rows.forEach(r => {
+    const key = `${extractModel(r.vehicle)}|${r.year}`;
+    if (!groupedData[key]) groupedData[key] = [];
+    groupedData[key].push(r);
+  });
+
+  output.innerHTML = '';
+
+  Object.keys(groupedData).sort().forEach(key => {
+    const [model, yr] = key.split('|');
+    const title = customTitle || `${model} ${yr} MODEL STOCK`;
+
+    const section = document.createElement('div');
+    section.className = 'summary-sheet';
+
+    let html = `<div class="title">${title}</div>`;
+    html += `<table><thead><tr>
+      <th>SNo</th>
+      <th>Subdealer</th>
+      <th>Vehicle</th>
+      <th>Chassis Number</th>
+      <th>Engine Number</th>
+      <th>Colour</th>
+      <th>Year Of Model</th>
+    </tr></thead><tbody>`;
+
+    groupedData[key].forEach((r, i) => {
+      html += `<tr>
+        <td>${i+1}</td>
+        <td>${r.subdealer}</td>
+        <td>${r.vehicle}</td>
+        <td>${r.chassis}</td>
+        <td>${r.engine}</td>
+        <td>${r.colour}</td>
+        <td>${r.year}</td>
+      </tr>`;
+    });
+
+    html += `</tbody></table>`;
+    section.innerHTML = html;
+    output.appendChild(section);
+  });
+}
+
+async function downloadAllExcel() {
+  const zip = new JSZip();
+
+  for (const [key, rows] of Object.entries(groupedData)) {
+    const [model, yr] = key.split('|');
+    const ws = XLSX.utils.json_to_sheet(rows.map((r, i) => ({
+      SNo: i + 1,
+      Subdealer: r.subdealer,
+      Vehicle: r.vehicle,
+      'Chassis Number': r.chassis,
+      'Engine Number': r.engine,
+      Colour: r.colour,
+      'Year Of Model': r.year
+    })));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Summary');
+    const array = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+    zip.file(`${model}_${yr}.xlsx`, array);
+  }
+
+  const blob = await zip.generateAsync({type:'blob'});
+  saveBlob(blob, 'Stock_Summaries_Excel.zip');
+}
+
+async function downloadAllPDF() {
+  const zip = new JSZip();
+  const sections = document.querySelectorAll('.summary-sheet');
+
+  for (const section of sections) {
+    const title = section.querySelector('.title').textContent.replace(/[\\/:*?"<>|]/g, '_');
+    const canvas = await html2canvas(section, {scale: 2});
+    const imgData = canvas.toDataURL('image/png');
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('l', 'pt', 'a4');
+    const width = pdf.internal.pageSize.getWidth();
+    const height = canvas.height * width / canvas.width;
+    pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+
+    zip.file(`${title}.pdf`, pdf.output('arraybuffer'));
+  }
+
+  const blob = await zip.generateAsync({type:'blob'});
+  saveBlob(blob, 'Stock_Summaries_PDF.zip');
+}
+
+function saveBlob(blob, filename) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+</script>
+</body>
+</html>

@@ -44,6 +44,11 @@ th { background:#eaeaea; }
     <div class="controls">
       <select id="yearFilter"><option value="">All Years</option></select>
       <select id="branchFilter"><option value="">All Branches</option></select>
+     
+<select id="vehicleFilter" multiple size="8" style="min-width:220px;">
+</select>
+
+
       <input id="customTitle" placeholder="Custom Report Title (optional)">
       <button onclick="generateReports()">Generate Reports</button>
       <button onclick="downloadAllExcel()">Download Excel ZIP</button>
@@ -100,30 +105,47 @@ fileInput.addEventListener('change', e => {
   if (file) handleFile(file);
 });
 
-// Convert Excel date to year
+
 function excelDateToYear(value) {
-  if (!value) return new Date().getFullYear();
+  if (!value) return '';
 
   if (typeof value === 'number') {
     const d = XLSX.SSF.parse_date_code(value);
-    return d ? d.y : new Date().getFullYear();
+    return d ? String(d.y) : '';
   }
 
-  const dt = new Date(value);
-  return isNaN(dt) ? new Date().getFullYear() : dt.getFullYear();
+  const text = String(value).trim();
+
+  // Direct year like 2025
+  if (/^\d{4}$/.test(text)) {
+    return text;
+  }
+
+  const dt = new Date(text);
+  return isNaN(dt) ? '' : String(dt.getFullYear());
 }
 
-// Normalize row
 function normalizeRow(r) {
+  const year =
+    String(
+      r['Year Of Model'] ||
+      r['Year of Model'] ||
+      r['YEAR OF MODEL'] ||
+      excelDateToYear(r.Date) ||
+      new Date().getFullYear()
+    );
+
   return {
     subdealer: r.Subdealer || '',
     vehicle: r.Vehicle || '',
+    model: extractModel(r.Vehicle || ''),
     chassis: r['Chassis Number'] || '',
     engine: r['Engine Number'] || '',
     colour: r.Colour || '',
-    year: excelDateToYear(r.Date)
+    year
   };
 }
+
 
 // Extract model name
 function extractModel(vehicle) {
@@ -195,16 +217,26 @@ function handleFile(file) {
   reader.readAsArrayBuffer(file);
 }
 
-// Populate filters
 function populateFilters() {
   const yearFilter = document.getElementById('yearFilter');
   const branchFilter = document.getElementById('branchFilter');
+  const vehicleFilter = document.getElementById('vehicleFilter');
 
-  const years = [...new Set(rawRows.map(r => r.year))].sort();
-  const branches = [...new Set(rawRows.map(r => r.subdealer))].sort();
+  const years = [...new Set(rawRows.map(r => r.year))]
+    .filter(Boolean)
+    .sort();
+
+  const branches = [...new Set(rawRows.map(r => r.subdealer))]
+    .filter(Boolean)
+    .sort();
+
+  const vehicles = [...new Set(rawRows.map(r => r.model))]
+    .filter(Boolean)
+    .sort();
 
   yearFilter.innerHTML = '<option value="">All Years</option>';
   branchFilter.innerHTML = '<option value="">All Branches</option>';
+  vehicleFilter.innerHTML = '';
 
   years.forEach(y => {
     yearFilter.innerHTML += `<option value="${y}">${y}</option>`;
@@ -212,6 +244,10 @@ function populateFilters() {
 
   branches.forEach(b => {
     branchFilter.innerHTML += `<option value="${b}">${b}</option>`;
+  });
+
+  vehicles.forEach(v => {
+    vehicleFilter.innerHTML += `<option value="${v}">${v}</option>`;
   });
 }
 
@@ -222,15 +258,25 @@ function generateReports() {
     return;
   }
 
-  const year = document.getElementById('yearFilter').value;
-  const branch = document.getElementById('branchFilter').value;
-  const customTitle =
-    document.getElementById('customTitle').value.trim();
+ 
+const year = document.getElementById('yearFilter').value;
+const branch = document.getElementById('branchFilter').value;
+const customTitle =
+  document.getElementById('customTitle').value.trim();
 
-  const rows = rawRows.filter(r =>
-    (!year || String(r.year) === year) &&
-    (!branch || r.subdealer === branch)
-  );
+const selectedVehicles = Array.from(
+  document.getElementById('vehicleFilter').selectedOptions
+).map(option => option.value);
+
+const rows = rawRows.filter(r =>
+  (!year || r.year === year) &&
+  (!branch || r.subdealer === branch) &&
+  (
+    selectedVehicles.length === 0 ||
+    selectedVehicles.includes(r.model)
+  )
+);
+
 
   groupedData = {};
 
@@ -372,6 +418,7 @@ async function downloadAllExcel() {
 // ========================================
 // DOWNLOAD PDF ZIP + COMBINED PDF
 // ========================================
+
 async function downloadAllPDF() {
   if (Object.keys(groupedData).length === 0) {
     alert('No reports generated.');
@@ -382,8 +429,11 @@ async function downloadAllPDF() {
   const sections = document.querySelectorAll('.summary-sheet');
   const { jsPDF } = window.jspdf;
 
-  // Combined PDF
-  const combinedPdf = new jsPDF('l', 'pt', 'a4');
+  const combinedPdf = new jsPDF({
+    orientation: 'landscape',
+    unit: 'pt',
+    format: 'a4'
+  });
 
   for (let i = 0; i < sections.length; i++) {
     const section = sections[i];
@@ -398,10 +448,10 @@ async function downloadAllPDF() {
       backgroundColor: '#ffffff'
     });
 
-    const imgData = canvas.toDataURL('image/png');
+    const imgData = canvas.toDataURL('image/jpeg', 1.0);
 
-    const pageWidth = 842;   // A4 landscape width
-    const pageHeight = 595;  // A4 landscape height
+    const pageWidth = 842;
+    const pageHeight = 595;
 
     const ratio = Math.min(
       pageWidth / canvas.width,
@@ -414,13 +464,16 @@ async function downloadAllPDF() {
     const x = (pageWidth - imgWidth) / 2;
     const y = (pageHeight - imgHeight) / 2;
 
-    // ---------------------------------
     // Individual PDF
-    // ---------------------------------
-    const singlePdf = new jsPDF('l', 'pt', 'a4');
+    const singlePdf = new jsPDF({
+      orientation: 'landscape',
+      unit: 'pt',
+      format: 'a4'
+    });
+
     singlePdf.addImage(
       imgData,
-      'PNG',
+      'JPEG',
       x,
       y,
       imgWidth,
@@ -432,14 +485,12 @@ async function downloadAllPDF() {
       singlePdf.output('arraybuffer')
     );
 
-    // ---------------------------------
     // Combined PDF
-    // ---------------------------------
     if (i > 0) combinedPdf.addPage();
 
     combinedPdf.addImage(
       imgData,
-      'PNG',
+      'JPEG',
       x,
       y,
       imgWidth,
@@ -447,19 +498,15 @@ async function downloadAllPDF() {
     );
   }
 
-  // Add combined PDF to ZIP
   zip.file(
     'All_Stock_Summaries.pdf',
     combinedPdf.output('arraybuffer')
   );
 
-  // Generate ZIP
-  const blob = await zip.generateAsync({
-    type: 'blob'
-  });
-
+  const blob = await zip.generateAsync({ type: 'blob' });
   saveBlob(blob, 'Stock_Summaries_PDF.zip');
 }
+
 
 // Save file
 function saveBlob(blob, filename) {

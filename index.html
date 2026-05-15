@@ -10,161 +10,217 @@
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
 <style>
-/* ===== GENERAL ===== */
+/* =========================
+   MODERN PURPLE THEME
+========================= */
+
+:root {
+    --primary: #7c3aed;
+    --primary-dark: #6d28d9;
+    --primary-light: #f3e8ff;
+    --secondary: #8b5cf6;
+    --border: #e5e7eb;
+    --text: #1f2937;
+    --text-muted: #6b7280;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --shadow: 0 10px 30px rgba(124, 58, 237, 0.12);
+    --radius: 16px;
+}
+
+/* =========================
+   GENERAL
+========================= */
 body {
-    font-family: Arial, sans-serif;
+    font-family: "Segoe UI", Arial, sans-serif;
     margin: 0;
-    background: #f4f6f9;
-    color: #222;
+    background: linear-gradient(135deg, #f5f3ff 0%, #faf5ff 50%, #ffffff 100%);
+    color: var(--text);
 }
 
 .container {
-    max-width: 1500px;
+    max-width: 1600px;
     margin: auto;
-    padding: 20px;
+    padding: 30px 20px 50px;
 }
 
 h1 {
     text-align: center;
-    font-size: 48px;
+    font-size: 42px;
     margin: 10px 0 30px;
-    font-weight: 700;
-    color: #111;
+    font-weight: 800;
+    color: var(--primary);
+    letter-spacing: -0.5px;
 }
 
-/* ===== PANEL ===== */
+/* =========================
+   PANEL
+========================= */
 .panel {
-    background: #ffffff;
-    padding: 25px;
-    border-radius: 16px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    background: var(--card);
+    padding: 28px;
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(124, 58, 237, 0.08);
     margin-bottom: 30px;
 }
 
-/* ===== DROP ZONE ===== */
+/* =========================
+   DROP ZONE
+========================= */
 .drop-zone {
-    border: 3px dashed #9aa0a6;
-    background: #fafbfc;
-    border-radius: 14px;
-    padding: 70px 30px;
-    min-height: 180px;
+    border: 3px dashed #c4b5fd;
+    background: linear-gradient(135deg, #faf5ff, #f5f3ff);
+    border-radius: 20px;
+    padding: 60px 30px;
+    min-height: 160px;
     text-align: center;
     cursor: pointer;
     transition: all 0.3s ease;
     font-size: 24px;
     font-weight: 600;
-    color: #555;
+    color: var(--primary);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-direction: column;
-    margin-bottom: 25px;
+    margin-bottom: 28px;
 }
 
 .drop-zone:hover {
-    border-color: #0d6efd;
-    background: #eef5ff;
+    border-color: var(--primary);
+    background: #f3e8ff;
+    transform: translateY(-2px);
 }
 
 .drop-zone.dragover {
-    border-color: #0d6efd;
-    background: #e7f1ff;
+    border-color: var(--primary-dark);
+    background: #ede9fe;
     transform: scale(1.01);
 }
 
 .drop-zone small {
-    font-size: 15px;
-    font-weight: normal;
-    color: #666;
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text-muted);
     margin-top: 10px;
 }
 
-/* ===== FILTER CONTROLS ===== */
+/* =========================
+   CONTROLS GRID
+========================= */
 .controls {
     display: grid;
     grid-template-columns:
-        150px
-        220px
+        160px
+        240px
         260px
-        220px
-        auto
-        auto
-        auto;
-    gap: 12px;
-    align-items: stretch;
+        200px
+        minmax(240px, 1fr);
+    gap: 14px;
+    align-items: start;
 }
 
-/* Inputs and Selects */
+/* =========================
+   INPUTS & SELECTS
+========================= */
 select,
 input {
     width: 100%;
-    min-height: 52px;
-    padding: 10px 12px;
-    border: 1px solid #cfd4da;
-    border-radius: 10px;
-    font-size: 15px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-size: 14px;
     background: #fff;
     box-sizing: border-box;
+    transition: all 0.2s ease;
+    color: var(--text);
 }
 
-/* Multi-select Vehicle Box */
+select:focus,
+input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.12);
+}
+
+/* Multi-select boxes */
+#yearFilter,
+#branchFilter,
 #vehicleFilter {
     min-height: 180px;
-    font-size: 14px;
+    font-size: 13px;
 }
 
-/* Custom Title */
+/* Report type and title */
+#reportType,
 #customTitle {
-    min-height: 52px;
+    min-height: 46px;
 }
 
-/* ===== BUTTONS ===== */
-button {
-    min-height: 52px;
-    padding: 0 18px;
+/* =========================
+   BUTTON GROUP
+========================= */
+.controls button {
+    min-height: 44px;
+    padding: 0 16px;
     border: none;
-    border-radius: 10px;
-    background: #0d6efd;
-    color: white;
-    font-size: 15px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: 0.25s;
+    transition: all 0.25s ease;
     white-space: nowrap;
+    box-shadow: 0 6px 14px rgba(124, 58, 237, 0.18);
 }
 
-button:hover {
-    background: #0b5ed7;
-    transform: translateY(-1px);
+.controls button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 18px rgba(124, 58, 237, 0.22);
 }
 
-button.secondary {
-    background: #6c757d;
+.controls button.secondary {
+    background: #64748b;
+    box-shadow: 0 6px 14px rgba(100, 116, 139, 0.18);
 }
 
-button.secondary:hover {
-    background: #5c636a;
+.controls button.secondary:hover {
+    background: #475569;
 }
 
-/* ===== SUMMARY SHEET ===== */
+/* Make buttons span full width in a neat layout */
+.controls button {
+    width: 100%;
+}
+
+/* =========================
+   SUMMARY SHEETS
+========================= */
 .summary-sheet {
     background: #fff;
     margin: 30px 0;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
     page-break-after: always;
 }
 
 .title {
-    background: #fff200;
-    font-size: 44px;
+    background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+    color: #fff;
+    font-size: 34px;
     font-weight: 700;
     text-align: center;
     padding: 18px;
     text-transform: uppercase;
-    border: 1px solid #000;
+    letter-spacing: 0.5px;
 }
 
-/* ===== TABLE ===== */
+/* =========================
+   TABLE
+========================= */
 table {
     width: 100%;
     border-collapse: collapse;
@@ -172,21 +228,32 @@ table {
 
 th,
 td {
-    border: 1px solid #000;
-    padding: 8px;
-    font-size: 14px;
+    border: 1px solid #e5e7eb;
+    padding: 8px 10px;
+    font-size: 13px;
     text-align: center;
 }
 
 th {
-    background: #ececec;
+    background: #f3e8ff;
+    color: var(--primary);
     font-weight: 700;
 }
 
-/* ===== PRINT ===== */
+tbody tr:nth-child(even) {
+    background: #faf5ff;
+}
+
+tbody tr:hover {
+    background: #f3e8ff;
+}
+
+/* =========================
+   PRINT
+========================= */
 @media print {
     body {
-        background: white;
+        background: #fff;
     }
 
     .panel {
@@ -195,11 +262,14 @@ th {
 
     .summary-sheet {
         box-shadow: none;
+        border-radius: 0;
         margin: 0;
     }
 
     .title {
-        font-size: 32px;
+        font-size: 28px;
+        background: #7c3aed !important;
+        color: #fff !important;
     }
 
     th,
@@ -209,36 +279,48 @@ th {
     }
 }
 
-/* ===== RESPONSIVE ===== */
-@media (max-width: 1200px) {
+/* =========================
+   RESPONSIVE
+========================= */
+@media (max-width: 1400px) {
     .controls {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    #vehicleFilter {
-        min-height: 150px;
-    }
-
-    button {
-        width: 100%;
+        grid-template-columns: repeat(3, 1fr);
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
+    .controls {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    #yearFilter,
+    #branchFilter,
+    #vehicleFilter {
+        min-height: 140px;
+    }
+}
+
+@media (max-width: 600px) {
     h1 {
-        font-size: 32px;
+        font-size: 28px;
     }
 
     .drop-zone {
-        min-height: 140px;
         padding: 40px 20px;
-        font-size: 20px;
+        font-size: 18px;
+        min-height: 120px;
     }
 
     .controls {
         grid-template-columns: 1fr;
     }
 
+    .panel {
+        padding: 18px;
+    }
+
+    #yearFilter,
+    #branchFilter,
     #vehicleFilter {
         min-height: 120px;
     }

@@ -295,7 +295,10 @@ function generateReports() {
   });
 }
 
-// Download Excel ZIP
+
+// ========================================
+// DOWNLOAD ALL EXCEL FILES + MASTER WORKBOOK
+// ========================================
 async function downloadAllExcel() {
   if (Object.keys(groupedData).length === 0) {
     alert('No reports generated.');
@@ -304,37 +307,71 @@ async function downloadAllExcel() {
 
   const zip = new JSZip();
 
+  // Master workbook containing all sheets
+  const masterWorkbook = XLSX.utils.book_new();
+
   for (const [key, rows] of Object.entries(groupedData)) {
     const [model, yr] = key.split('|');
 
-    const ws = XLSX.utils.json_to_sheet(
-      rows.map((r, i) => ({
-        SNo: i + 1,
-        Subdealer: r.subdealer,
-        Vehicle: r.vehicle,
-        'Chassis Number': r.chassis,
-        'Engine Number': r.engine,
-        Colour: r.colour,
-        'Year Of Model': r.year
-      }))
-    );
+    const sheetData = rows.map((r, i) => ({
+      SNo: i + 1,
+      Subdealer: r.subdealer,
+      Vehicle: r.vehicle,
+      'Chassis Number': r.chassis,
+      'Engine Number': r.engine,
+      Colour: r.colour,
+      'Year Of Model': r.year
+    }));
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Summary');
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(sheetData);
 
-    const data = XLSX.write(wb, {
+    // -----------------------------
+    // Individual Excel file
+    // -----------------------------
+    const singleWb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(singleWb, ws, 'Summary');
+
+    const singleFile = XLSX.write(singleWb, {
       bookType: 'xlsx',
       type: 'array'
     });
 
-    zip.file(`${model}_${yr}.xlsx`, data);
+    zip.file(`${model}_${yr}.xlsx`, singleFile);
+
+    // -----------------------------
+    // Add to master workbook
+    // -----------------------------
+    let sheetName = `${model}_${yr}`;
+    sheetName = sheetName.substring(0, 31); // Excel limit
+
+    XLSX.utils.book_append_sheet(
+      masterWorkbook,
+      ws,
+      sheetName
+    );
   }
 
-  const blob = await zip.generateAsync({ type: 'blob' });
+  // Add master workbook to ZIP
+  const masterArray = XLSX.write(masterWorkbook, {
+    bookType: 'xlsx',
+    type: 'array'
+  });
+
+  zip.file('All_Stock_Summaries.xlsx', masterArray);
+
+  // Generate ZIP
+  const blob = await zip.generateAsync({
+    type: 'blob'
+  });
+
   saveBlob(blob, 'Stock_Summaries_Excel.zip');
 }
 
-// Download PDF ZIP
+
+// ========================================
+// DOWNLOAD PDF ZIP + COMBINED PDF
+// ========================================
 async function downloadAllPDF() {
   if (Object.keys(groupedData).length === 0) {
     alert('No reports generated.');
@@ -342,32 +379,81 @@ async function downloadAllPDF() {
   }
 
   const zip = new JSZip();
-  const sections =
-    document.querySelectorAll('.summary-sheet');
+  const sections = document.querySelectorAll('.summary-sheet');
+  const { jsPDF } = window.jspdf;
 
-  for (const section of sections) {
-    const title = section
-      .querySelector('.title')
-      .textContent.replace(/[\\/:*?"<>|]/g, '_');
+  // Combined PDF
+  const combinedPdf = new jsPDF('l', 'pt', 'a4');
+
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i];
+
+    const title = section.querySelector('.title')
+      .textContent
+      .replace(/[\\/:*?"<>|]/g, '_');
 
     const canvas = await html2canvas(section, {
-      scale: 2
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff'
     });
 
     const imgData = canvas.toDataURL('image/png');
 
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('l', 'pt', 'a4');
+    const pageWidth = 842;   // A4 landscape width
+    const pageHeight = 595;  // A4 landscape height
 
-    const width = pdf.internal.pageSize.getWidth();
-    const height =
-      canvas.height * width / canvas.width;
+    const ratio = Math.min(
+      pageWidth / canvas.width,
+      pageHeight / canvas.height
+    );
 
-    pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+    const imgWidth = canvas.width * ratio;
+    const imgHeight = canvas.height * ratio;
 
-    zip.file(`${title}.pdf`, pdf.output('arraybuffer'));
+    const x = (pageWidth - imgWidth) / 2;
+    const y = (pageHeight - imgHeight) / 2;
+
+    // ---------------------------------
+    // Individual PDF
+    // ---------------------------------
+    const singlePdf = new jsPDF('l', 'pt', 'a4');
+    singlePdf.addImage(
+      imgData,
+      'PNG',
+      x,
+      y,
+      imgWidth,
+      imgHeight
+    );
+
+    zip.file(
+      `${title}.pdf`,
+      singlePdf.output('arraybuffer')
+    );
+
+    // ---------------------------------
+    // Combined PDF
+    // ---------------------------------
+    if (i > 0) combinedPdf.addPage();
+
+    combinedPdf.addImage(
+      imgData,
+      'PNG',
+      x,
+      y,
+      imgWidth,
+      imgHeight
+    );
   }
 
+  // Add combined PDF to ZIP
+  zip.file(
+    'All_Stock_Summaries.pdf',
+    combinedPdf.output('arraybuffer')
+  );
+
+  // Generate ZIP
   const blob = await zip.generateAsync({
     type: 'blob'
   });

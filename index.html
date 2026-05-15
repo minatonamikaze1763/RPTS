@@ -256,8 +256,8 @@ th {
     </div>
 
     <div class="controls">
-      <select id="yearFilter"><option value="">All Years</option></select>
-      <select id="branchFilter"><option value="">All Branches</option></select>
+      <select id="yearFilter" multiple size="6" style="min-width:150px;"></select>
+<select id="branchFilter" multiple size="8" style="min-width:220px;"></select>
      
 <select id="vehicleFilter" multiple size="8" style="min-width:220px;">
   
@@ -472,7 +472,6 @@ function handleFile(file) {
 
   reader.readAsArrayBuffer(file);
 }
-
 function populateFilters() {
   const yearFilter = document.getElementById('yearFilter');
   const branchFilter = document.getElementById('branchFilter');
@@ -490,8 +489,8 @@ function populateFilters() {
     .filter(Boolean)
     .sort();
 
-  yearFilter.innerHTML = '<option value="">All Years</option>';
-  branchFilter.innerHTML = '<option value="">All Branches</option>';
+  yearFilter.innerHTML = '';
+  branchFilter.innerHTML = '';
   vehicleFilter.innerHTML = '';
 
   years.forEach(y => {
@@ -544,33 +543,44 @@ function generateReports() {
     return;
   }
 
-  // ==========================================
-  // GET FILTER VALUES
-  // ==========================================
-  const year = document.getElementById('yearFilter').value;
-  const branch = document.getElementById('branchFilter').value;
-  const customTitle =
-    document.getElementById('customTitle').value.trim();
+ // ==========================================
+// GET FILTER VALUES
+// ==========================================
+const selectedYears = Array.from(
+  document.getElementById('yearFilter').selectedOptions
+).map(option => option.value);
 
-  const reportType =
-    document.getElementById('reportType').value;
+const selectedBranches = Array.from(
+  document.getElementById('branchFilter').selectedOptions
+).map(option => option.value);
 
-  const selectedVehicles = Array.from(
-    document.getElementById('vehicleFilter').selectedOptions
-  ).map(option => option.value);
+const selectedVehicles = Array.from(
+  document.getElementById('vehicleFilter').selectedOptions
+).map(option => option.value);
 
-  // ==========================================
-  // APPLY FILTERS
-  // ==========================================
-  const rows = rawRows.filter(r =>
-    (!year || r.year === year) &&
-    (!branch || r.subdealer === branch) &&
-    (
-      selectedVehicles.length === 0 ||
-      selectedVehicles.includes(r.model)
-    )
-  );
+const customTitle =
+  document.getElementById('customTitle').value.trim();
 
+const reportType =
+  document.getElementById('reportType').value;
+
+// ==========================================
+// APPLY FILTERS
+// ==========================================
+const rows = rawRows.filter(r =>
+  (
+    selectedYears.length === 0 ||
+    selectedYears.includes(r.year)
+  ) &&
+  (
+    selectedBranches.length === 0 ||
+    selectedBranches.includes(r.subdealer)
+  ) &&
+  (
+    selectedVehicles.length === 0 ||
+    selectedVehicles.includes(r.model)
+  )
+);
   if (rows.length === 0) {
     output.innerHTML =
       '<p style="text-align:center;font-weight:bold;">No records found.</p>';

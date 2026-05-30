@@ -412,7 +412,10 @@ tbody tr:hover {
     <label for="vehicleFilter">Vehicle Series</label>
     <select id="vehicleFilter" multiple size="8"></select>
   </div>
-
+<div class="form-group">
+  <label for="colourFilter">Colour</label>
+  <select id="colourFilter" multiple size="8"></select>
+</div>
   <!-- Report Type -->
   <div class="form-group">
     <label for="reportType">Report Type</label>
@@ -663,6 +666,7 @@ function populateFilters() {
   const yearFilter = document.getElementById('yearFilter');
   const branchFilter = document.getElementById('branchFilter');
   const vehicleFilter = document.getElementById('vehicleFilter');
+  const colourFilter = document.getElementById('colourFilter');
 
   const years = [...new Set(rawRows.map(r => r.year))]
     .filter(Boolean)
@@ -676,9 +680,14 @@ function populateFilters() {
     .filter(Boolean)
     .sort();
 
+  const colours = [...new Set(rawRows.map(r => r.colour))]
+    .filter(Boolean)
+    .sort();
+
   yearFilter.innerHTML = '';
   branchFilter.innerHTML = '';
   vehicleFilter.innerHTML = '';
+  colourFilter.innerHTML = '';
 
   years.forEach(y => {
     yearFilter.innerHTML += `<option value="${y}">${y}</option>`;
@@ -690,6 +699,10 @@ function populateFilters() {
 
   vehicles.forEach(v => {
     vehicleFilter.innerHTML += `<option value="${v}">${v}</option>`;
+  });
+
+  colours.forEach(c => {
+    colourFilter.innerHTML += `<option value="${c}">${c}</option>`;
   });
 }
 
@@ -736,7 +749,9 @@ function generateReports() {
 const selectedYears = Array.from(
   document.getElementById('yearFilter').selectedOptions
 ).map(option => option.value);
-
+const selectedColours = Array.from(
+  document.getElementById('colourFilter').selectedOptions
+).map(option => option.value);
 const selectedBranches = Array.from(
   document.getElementById('branchFilter').selectedOptions
 ).map(option => option.value);
@@ -755,18 +770,22 @@ const reportType =
 // APPLY FILTERS
 // ==========================================
 const rows = rawRows.filter(r =>
-  (
-    selectedYears.length === 0 ||
-    selectedYears.includes(r.year)
-  ) &&
-  (
-    selectedBranches.length === 0 ||
-    selectedBranches.includes(r.subdealer)
-  ) &&
-  (
-    selectedVehicles.length === 0 ||
-    selectedVehicles.includes(r.model)
-  )
+(
+  selectedYears.length === 0 ||
+  selectedYears.includes(r.year)
+) &&
+(
+  selectedBranches.length === 0 ||
+  selectedBranches.includes(r.subdealer)
+) &&
+(
+  selectedVehicles.length === 0 ||
+  selectedVehicles.includes(r.model)
+) &&
+(
+  selectedColours.length === 0 ||
+  selectedColours.includes(r.colour)
+)
 );
   if (rows.length === 0) {
     output.innerHTML =
@@ -1059,6 +1078,8 @@ function saveBlob(blob, filename) {
   link.click();
   document.body.removeChild(link);
 }
+   document.getElementById('colourFilter')
+  .addEventListener('change', generateReports);
 </script>
 
 </body>

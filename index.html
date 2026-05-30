@@ -423,6 +423,12 @@ tbody tr:hover {
   <label for="colourFilter">Colour</label>
   <select id="colourFilter" multiple size="8"></select>
 </div>
+     <div class="form-group">
+  <label>&nbsp;</label>
+  <button type="button" id="uniqueBtn" onclick="toggleUniqueMode()">
+    Show Unique Chassis Only
+  </button>
+</div>
   <!-- Report Type -->
   <div class="form-group">
     <label for="reportType">Report Type</label>
@@ -432,12 +438,7 @@ tbody tr:hover {
       <option value="merged">Merged Table Report</option>
     </select>
   </div>
-<div class="form-group">
-  <label>&nbsp;</label>
-  <button type="button" id="uniqueBtn" onclick="toggleUniqueMode()">
-    Show Unique Chassis Only
-  </button>
-</div>
+
   <!-- Custom Title -->
   <div class="form-group">
     <label for="customTitle">Custom Report Title</label>

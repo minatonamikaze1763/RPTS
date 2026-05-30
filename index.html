@@ -348,7 +348,14 @@ tbody tr:hover {
     margin-bottom: 20px;
     flex-wrap: wrap;
 }
+.duplicate-row {
+    background: #ffe5e5 !important;
+}
 
+.duplicate-row td {
+    color: #b91c1c;
+    font-weight: 600;
+}
 .theme-btn {
     width: 36px;
     height: 36px;
@@ -738,168 +745,218 @@ async function downloadAllJPG() {
   saveBlob(zipBlob, 'Stock_Summaries_JPG.zip');
 }
 function generateReports() {
-  if (rawRows.length === 0) {
-    alert('Please upload a file first.');
-    return;
-  }
+if (rawRows.length === 0) {
+alert('Please upload a file first.');
+return;
+}
 
- // ==========================================
+// ==========================================
 // GET FILTER VALUES
 // ==========================================
 const selectedYears = Array.from(
-  document.getElementById('yearFilter').selectedOptions
+document.getElementById('yearFilter').selectedOptions
 ).map(option => option.value);
+
 const selectedColours = Array.from(
-  document.getElementById('colourFilter').selectedOptions
+document.getElementById('colourFilter').selectedOptions
 ).map(option => option.value);
+
 const selectedBranches = Array.from(
-  document.getElementById('branchFilter').selectedOptions
+document.getElementById('branchFilter').selectedOptions
 ).map(option => option.value);
 
 const selectedVehicles = Array.from(
-  document.getElementById('vehicleFilter').selectedOptions
+document.getElementById('vehicleFilter').selectedOptions
 ).map(option => option.value);
 
 const customTitle =
-  document.getElementById('customTitle').value.trim();
+document.getElementById('customTitle').value.trim();
 
 const reportType =
-  document.getElementById('reportType').value;
+document.getElementById('reportType').value;
 
 // ==========================================
 // APPLY FILTERS
 // ==========================================
 const rows = rawRows.filter(r =>
 (
-  selectedYears.length === 0 ||
-  selectedYears.includes(r.year)
+selectedYears.length === 0 ||
+selectedYears.includes(r.year)
 ) &&
 (
-  selectedBranches.length === 0 ||
-  selectedBranches.includes(r.subdealer)
+selectedBranches.length === 0 ||
+selectedBranches.includes(r.subdealer)
 ) &&
 (
-  selectedVehicles.length === 0 ||
-  selectedVehicles.includes(r.model)
+selectedVehicles.length === 0 ||
+selectedVehicles.includes(r.model)
 ) &&
 (
-  selectedColours.length === 0 ||
-  selectedColours.includes(r.colour)
+selectedColours.length === 0 ||
+selectedColours.includes(r.colour)
 )
 );
-  if (rows.length === 0) {
-    output.innerHTML =
-      '<p style="text-align:center;font-weight:bold;">No records found.</p>';
-    groupedData = {};
-    return;
+
+if (rows.length === 0) {
+output.innerHTML =
+'<p style="text-align:center;font-weight:bold;">No records found.</p>';
+groupedData = {};
+return;
+}
+
+// ==========================================
+// FIND DUPLICATE CHASSIS NUMBERS
+// ==========================================
+const chassisCount = {};
+
+rows.forEach(r => {
+const chassis = String(r.chassis || '')
+.trim()
+.toUpperCase();
+
+
+if (!chassis) return;
+
+chassisCount[chassis] =
+  (chassisCount[chassis] || 0) + 1;
+
+
+});
+
+const duplicateCount =
+Object.values(chassisCount)
+.filter(count => count > 1)
+.length;
+
+// ==========================================
+// GROUP DATA
+// ==========================================
+groupedData = {};
+
+if (reportType === 'merged') {
+groupedData['ALL STOCK'] = rows;
+}
+else if (reportType === 'series') {
+rows.forEach(r => {
+const key = `${r.model}|${r.year}`;
+
+  if (!groupedData[key]) {
+    groupedData[key] = [];
   }
 
-  // ==========================================
-  // GROUP DATA
-  // ==========================================
-  groupedData = {};
+  groupedData[key].push(r);
+});
 
-  if (reportType === 'merged') {
-    groupedData['ALL STOCK'] = rows;
-  }
-  else if (reportType === 'series') {
-    rows.forEach(r => {
-      const key = `${r.model}|${r.year}`;
-      if (!groupedData[key]) {
-        groupedData[key] = [];
-      }
-      groupedData[key].push(r);
-    });
-  }
-  else if (reportType === 'model') {
-    rows.forEach(r => {
-      const key = `${r.vehicle}|${r.year}`;
-      if (!groupedData[key]) {
-        groupedData[key] = [];
-      }
-      groupedData[key].push(r);
-    });
+
+}
+else if (reportType === 'model') {
+rows.forEach(r => {
+const key = `${r.vehicle}|${r.year}`;
+
+
+  if (!groupedData[key]) {
+    groupedData[key] = [];
   }
 
-  // ==========================================
-  // CLEAR OUTPUT
-  // ==========================================
-  output.innerHTML = '';
+  groupedData[key].push(r);
+});
 
-  // ==========================================
-  // CREATE TABLES
-  // ==========================================
-  Object.keys(groupedData)
-    .sort()
-    .forEach(key => {
 
-      // -----------------------------
-      // Generate Title
-      // -----------------------------
-      let title;
+}
 
-      if (key === 'ALL STOCK') {
-        title = customTitle || 'ALL STOCK SUMMARY';
-      } else {
-        const parts = key.split('|');
-        const model = parts[0];
-        const yr = parts[1] || '';
+// ==========================================
+// CLEAR OUTPUT
+// ==========================================
+output.innerHTML = '';
 
-        title =
-          customTitle ||
-          `${model} ${yr} MODEL STOCK`;
-      }
+// ==========================================
+// CREATE TABLES
+// ==========================================
+Object.keys(groupedData)
+.sort()
+.forEach(key => {
 
-      // -----------------------------
-      // Create Section
-      // -----------------------------
-      const section =
-        document.createElement('div');
 
-      section.className = 'summary-sheet';
+  let title;
 
-      let html = `
-        <div class="title">${title}</div>
-        <table>
-          <thead>
-            <tr>
-              <th>SNo</th>
-              <th>Subdealer</th>
-              <th>Vehicle</th>
-              <th>Chassis Number</th>
-              <th>Engine Number</th>
-              <th>Colour</th>
-              <th>Year Of Model</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
+if (key === 'ALL STOCK') {
+  title = customTitle || 'ALL STOCK SUMMARY';
+} else {
+  const parts = key.split('|');
+  const model = parts[0];
+  const yr = parts[1] || '';
 
-      // -----------------------------
-      // Table Rows
-      // -----------------------------
-      groupedData[key].forEach((r, i) => {
-        html += `
-          <tr>
-            <td>${i + 1}</td>
-            <td>${r.subdealer}</td>
-            <td>${r.vehicle}</td>
-            <td>${r.chassis}</td>
-            <td>${r.engine}</td>
-            <td>${r.colour}</td>
-            <td>${r.year}</td>
-          </tr>
-        `;
-      });
+  title =
+    customTitle ||
+    `${model} ${yr} MODEL STOCK`;
+}
 
-      html += `
-          </tbody>
-        </table>
-      `;
+if (duplicateCount > 0) {
+  title += ` | DUPLICATE CHASSIS: ${duplicateCount}`;
+}
 
-      section.innerHTML = html;
-      output.appendChild(section);
-    });
+
+
+  const section = document.createElement('div');
+  section.className = 'summary-sheet';
+
+  let html = `
+    <div class="title">${title}</div>
+    <table>
+      <thead>
+        <tr>
+          <th>SNo</th>
+          <th>Subdealer</th>
+          <th>Vehicle</th>
+          <th>Chassis Number</th>
+          <th>Engine Number</th>
+          <th>Colour</th>
+          <th>Year Of Model</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  groupedData[key].forEach((r, i) => {
+
+    const chassis = String(r.chassis || '')
+      .trim()
+      .toUpperCase();
+
+    const isDuplicate =
+      chassisCount[chassis] > 1;
+
+    html += `
+      <tr style="${
+        isDuplicate
+          ? 'background:#ffe5e5;color:#b91c1c;font-weight:700;'
+          : ''
+      }">
+        <td>${i + 1}</td>
+        <td>${r.subdealer}</td>
+        <td>${r.vehicle}</td>
+        <td>${r.chassis}</td>
+        <td>${r.engine}</td>
+        <td>${r.colour}</td>
+        <td>${r.year}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+      <tr style="font-weight:bold;background:#ede9fe;">
+        <td colspan="6">TOTAL STOCK</td>
+        <td>${groupedData[key].length}</td>
+      </tr>
+    </tbody>
+  </table>
+  `;
+
+  section.innerHTML = html;
+  output.appendChild(section);
+});
+
+
 }
 
 

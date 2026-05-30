@@ -432,7 +432,12 @@ tbody tr:hover {
       <option value="merged">Merged Table Report</option>
     </select>
   </div>
-
+<div class="form-group">
+  <label>&nbsp;</label>
+  <button type="button" id="uniqueBtn" onclick="toggleUniqueMode()">
+    Show Unique Chassis Only
+  </button>
+</div>
   <!-- Custom Title -->
   <div class="form-group">
     <label for="customTitle">Custom Report Title</label>
@@ -475,14 +480,24 @@ tbody tr:hover {
 </div>
 
 <script>
-   
+   let uniqueChassisMode = false;
 let rawRows = [];
 let groupedData = {};
 
 const fileInput = document.getElementById('fileInput');
 const dropZone = document.getElementById('dropZone');
 const output = document.getElementById('output');
+function toggleUniqueMode() {
 
+  uniqueChassisMode = !uniqueChassisMode;
+
+  document.getElementById('uniqueBtn').textContent =
+    uniqueChassisMode
+      ? 'Showing Unique Chassis Only'
+      : 'Show Unique Chassis Only';
+
+  generateReports();
+}
 // Show selected file name
 function showFileName(name) {
   dropZone.innerHTML = `
@@ -745,14 +760,13 @@ async function downloadAllJPG() {
   saveBlob(zipBlob, 'Stock_Summaries_JPG.zip');
 }
 function generateReports() {
+
 if (rawRows.length === 0) {
 alert('Please upload a file first.');
 return;
 }
 
-// ==========================================
-// GET FILTER VALUES
-// ==========================================
+// FILTER VALUES
 const selectedYears = Array.from(
 document.getElementById('yearFilter').selectedOptions
 ).map(option => option.value);
@@ -775,10 +789,8 @@ document.getElementById('customTitle').value.trim();
 const reportType =
 document.getElementById('reportType').value;
 
-// ==========================================
 // APPLY FILTERS
-// ==========================================
-const rows = rawRows.filter(r =>
+let rows = rawRows.filter(r =>
 (
 selectedYears.length === 0 ||
 selectedYears.includes(r.year)
@@ -804,9 +816,7 @@ groupedData = {};
 return;
 }
 
-// ==========================================
-// FIND DUPLICATE CHASSIS NUMBERS
-// ==========================================
+// DUPLICATE COUNT
 const chassisCount = {};
 
 rows.forEach(r => {
@@ -827,64 +837,92 @@ const duplicateCount =
 Object.values(chassisCount)
 .filter(count => count > 1)
 .length;
-output.innerHTML = `
-<div style="
-  background:#fff3cd;
-  border:1px solid #ffe69c;
-  padding:15px;
-  margin-bottom:20px;
-  border-radius:10px;
-  font-size:16px;
-  font-weight:bold;
-  text-align:center;
-">
-🚨 Duplicate Chassis Found Across Filtered Stock: ${duplicateCount}
-</div>
-`;
-// ==========================================
+
+// UNIQUE CHASSIS MODE
+if (uniqueChassisMode) {
+
+
+const seen = new Set();
+
+rows = rows.filter(r => {
+
+  const chassis = String(r.chassis || '')
+    .trim()
+    .toUpperCase();
+
+  if (!chassis) return true;
+
+  if (seen.has(chassis)) {
+    return false;
+  }
+
+  seen.add(chassis);
+  return true;
+});
+
+
+}
+
+// SUMMARY
+output.innerHTML = `     <div style="
+      background:#fff3cd;
+      border:1px solid #ffe69c;
+      padding:15px;
+      margin-bottom:20px;
+      border-radius:10px;
+      font-size:16px;
+      font-weight:bold;
+      text-align:center;
+    ">
+      🚨 Duplicate Chassis Found Across Filtered Stock: ${duplicateCount}       <br>
+      Total Records Displayed: ${rows.length}
+      ${uniqueChassisMode ? '<br>Unique Chassis Mode Enabled' : ''}     </div>
+  `;
+
 // GROUP DATA
-// ==========================================
 groupedData = {};
 
 if (reportType === 'merged') {
+
+
 groupedData['ALL STOCK'] = rows;
-}
-else if (reportType === 'series') {
+
+
+} else if (reportType === 'series') {
+
+
 rows.forEach(r => {
-const key = `${r.model}|${r.year}`;
+
+  const key = `${r.model}|${r.year}`;
 
   if (!groupedData[key]) {
     groupedData[key] = [];
   }
 
   groupedData[key].push(r);
+
 });
 
 
-}
-else if (reportType === 'model') {
-rows.forEach(r => {
-const key = `${r.vehicle}|${r.year}`;
+} else if (reportType === 'model') {
 
+
+rows.forEach(r => {
+
+  const key = `${r.vehicle}|${r.year}`;
 
   if (!groupedData[key]) {
     groupedData[key] = [];
   }
 
   groupedData[key].push(r);
+
 });
 
 
 }
 
-// ==========================================
-// CLEAR OUTPUT---
-// ==========================================
-// output.innerHTML = '';
-
-// ==========================================
 // CREATE TABLES
-// ==========================================
 Object.keys(groupedData)
 .sort()
 .forEach(key => {
@@ -892,21 +930,29 @@ Object.keys(groupedData)
 
   let title;
 
-if (key === 'ALL STOCK') {
-  title = customTitle || 'ALL STOCK SUMMARY';
-} else {
-  const parts = key.split('|');
-  const model = parts[0];
-  const yr = parts[1] || '';
+  if (key === 'ALL STOCK') {
 
-  title =
-    customTitle ||
-    `${model} ${yr} MODEL STOCK`;
-}
+    title =
+      customTitle ||
+      'ALL STOCK SUMMARY';
 
+  } else {
 
-  const section = document.createElement('div');
-  section.className = 'summary-sheet';
+    const parts = key.split('|');
+
+    const model = parts[0];
+    const yr = parts[1] || '';
+
+    title =
+      customTitle ||
+      `${model} ${yr} MODEL STOCK`;
+  }
+
+  const section =
+    document.createElement('div');
+
+  section.className =
+    'summary-sheet';
 
   let html = `
     <div class="title">${title}</div>
@@ -927,9 +973,10 @@ if (key === 'ALL STOCK') {
 
   groupedData[key].forEach((r, i) => {
 
-    const chassis = String(r.chassis || '')
-      .trim()
-      .toUpperCase();
+    const chassis =
+      String(r.chassis || '')
+        .trim()
+        .toUpperCase();
 
     const isDuplicate =
       chassisCount[chassis] > 1;
@@ -956,12 +1003,13 @@ if (key === 'ALL STOCK') {
         <td colspan="6">TOTAL STOCK</td>
         <td>${groupedData[key].length}</td>
       </tr>
-    </tbody>
-  </table>
+      </tbody>
+    </table>
   `;
 
   section.innerHTML = html;
   output.appendChild(section);
+
 });
 
 

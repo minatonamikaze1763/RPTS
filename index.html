@@ -827,7 +827,20 @@ const duplicateCount =
 Object.values(chassisCount)
 .filter(count => count > 1)
 .length;
-
+output.innerHTML = `
+<div style="
+  background:#fff3cd;
+  border:1px solid #ffe69c;
+  padding:15px;
+  margin-bottom:20px;
+  border-radius:10px;
+  font-size:16px;
+  font-weight:bold;
+  text-align:center;
+">
+🚨 Duplicate Chassis Found Across Filtered Stock: ${duplicateCount}
+</div>
+`;
 // ==========================================
 // GROUP DATA
 // ==========================================
@@ -865,23 +878,10 @@ const key = `${r.vehicle}|${r.year}`;
 }
 
 // ==========================================
-// CLEAR OUTPUT
+// CLEAR OUTPUT---
 // ==========================================
-output.innerHTML = '';
-output.innerHTML = `
-<div style="
-  background:#fff3cd;
-  border:1px solid #ffe69c;
-  padding:15px;
-  margin-bottom:20px;
-  border-radius:10px;
-  font-size:16px;
-  font-weight:bold;
-  text-align:center;
-">
-🚨 Duplicate Chassis Found Across Filtered Stock: ${duplicateCount}
-</div>
-`;
+// output.innerHTML = '';
+
 // ==========================================
 // CREATE TABLES
 // ==========================================
@@ -902,28 +902,6 @@ if (key === 'ALL STOCK') {
   title =
     customTitle ||
     `${model} ${yr} MODEL STOCK`;
-}
-
-const groupChassisCount = {};
-
-groupedData[key].forEach(r => {
-  const chassis = String(r.chassis || '')
-    .trim()
-    .toUpperCase();
-
-  if (!chassis) return;
-
-  groupChassisCount[chassis] =
-    (groupChassisCount[chassis] || 0) + 1;
-});
-
-const groupDuplicateCount =
-  Object.values(groupChassisCount)
-    .filter(count => count > 1)
-    .length;
-
-if (groupDuplicateCount > 0) {
-  title += ` | DUPLICATES: ${groupDuplicateCount}`;
 }
 
 

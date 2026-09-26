@@ -1,0 +1,3737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<title>Advanced Stock Summary Generator</title>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+<style>
+
+/* =========================
+   THEME
+========================= */
+
+:root {
+    --primary: #7c3aed;
+    --primary-dark: #6d28d9;
+    --primary-light: #f3e8ff;
+    --secondary: #8b5cf6;
+    --border: #e5e7eb;
+    --text: #1f2937;
+    --text-muted: #6b7280;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --shadow: 0 10px 30px rgba(124, 58, 237, 0.12);
+    --radius: 16px;
+}
+
+/* =========================
+   GENERAL
+========================= */
+
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    margin: 0;
+    background:
+        linear-gradient(
+            135deg,
+            #f5f3ff 0%,
+            #faf5ff 50%,
+            #ffffff 100%
+        );
+    color: var(--text);
+}
+
+.container {
+    max-width: 1600px;
+    margin: auto;
+    padding: 30px 20px 50px;
+}
+
+h1 {
+    text-align: center;
+    font-size: 42px;
+    margin: 10px 0 30px;
+    font-weight: 800;
+    color: var(--primary);
+    letter-spacing: -0.5px;
+}
+
+/* =========================
+   PANEL
+========================= */
+
+.panel {
+    background: var(--card);
+    padding: 28px;
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(124, 58, 237, 0.08);
+    margin-bottom: 30px;
+}
+
+/* =========================
+   UPLOAD MODE
+========================= */
+
+.upload-mode-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-bottom: 18px;
+    max-width: 320px;
+}
+
+.upload-mode-wrapper label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary-dark);
+}
+
+#uploadMode {
+    min-height: 46px;
+}
+
+/* =========================
+   DROP ZONE
+========================= */
+
+.drop-zone {
+    border: 3px dashed #c4b5fd;
+    background: linear-gradient(135deg, #faf5ff, #f5f3ff);
+    border-radius: 20px;
+    padding: 60px 30px;
+    min-height: 160px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    margin-bottom: 20px;
+}
+
+.drop-zone:hover {
+    border-color: var(--primary);
+    background: #f3e8ff;
+    transform: translateY(-2px);
+}
+
+.drop-zone.dragover {
+    border-color: var(--primary-dark);
+    background: #ede9fe;
+    transform: scale(1.01);
+}
+
+.drop-zone small {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text-muted);
+    margin-top: 10px;
+}
+
+/* =========================
+   FILE LIST
+========================= */
+
+.file-list {
+    display: none;
+    margin-bottom: 28px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.file-list-header {
+    padding: 13px 16px;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.file-list-header strong {
+    color: var(--text);
+}
+
+.file-list-items {
+    padding: 8px;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    margin-bottom: 5px;
+    background: #fafafa;
+}
+
+.file-item:last-child {
+    margin-bottom: 0;
+}
+
+.file-name-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.file-color-dot {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+}
+
+.file-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.file-remove {
+    border: none;
+    background: #fee2e2;
+    color: #b91c1c;
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.file-remove:hover {
+    background: #fecaca;
+}
+
+.clear-files-btn {
+    border: none;
+    background: #64748b;
+    color: white;
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.clear-files-btn:hover {
+    background: #475569;
+}
+
+/* =========================
+   FILE LEGEND
+========================= */
+
+.file-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 20px;
+}
+
+.file-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid rgba(0,0,0,0.06);
+}
+
+.file-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+/* =========================
+   CONTROLS GRID
+========================= */
+
+.controls {
+    display: grid;
+    grid-template-columns:
+        160px
+        240px
+        260px
+        200px
+        minmax(240px, 1fr);
+
+    gap: 14px;
+    align-items: start;
+}
+
+/* =========================
+   INPUTS
+========================= */
+
+select,
+input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-size: 14px;
+    background: #fff;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+    color: var(--text);
+}
+
+select:focus,
+input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.12);
+}
+
+#yearFilter,
+#branchFilter,
+#vehicleFilter,
+#colourFilter {
+    min-height: 180px;
+    font-size: 13px;
+}
+
+#reportType,
+#customTitle {
+    min-height: 46px;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+
+.controls button {
+    min-height: 44px;
+    padding: 0 16px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(
+        135deg,
+        var(--primary),
+        var(--secondary)
+    );
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    white-space: nowrap;
+    box-shadow: 0 6px 14px rgba(124, 58, 237, 0.18);
+    width: 100%;
+}
+
+.controls button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 18px rgba(124, 58, 237, 0.22);
+}
+
+.controls button.secondary {
+    background: #64748b;
+    box-shadow: 0 6px 14px rgba(100, 116, 139, 0.18);
+}
+
+.controls button.secondary:hover {
+    background: #475569;
+}
+
+/* =========================
+   FORM GROUP
+========================= */
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #6d28d9;
+    margin-left: 2px;
+}
+
+/* =========================
+   SUMMARY
+========================= */
+
+.summary-sheet {
+    background: #fff;
+    margin: 30px 0;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    page-break-after: always;
+}
+
+.title {
+    background: linear-gradient(
+        135deg,
+        #7c3aed,
+        #8b5cf6
+    );
+    color: #fff;
+    font-size: 34px;
+    font-weight: 700;
+    text-align: center;
+    padding: 18px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* =========================
+   TABLE
+========================= */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    border: 1px solid #e5e7eb;
+    padding: 8px 10px;
+    font-size: 13px;
+    text-align: center;
+}
+
+th {
+    background: #f3e8ff;
+    color: var(--primary);
+    font-weight: 700;
+}
+
+tbody tr:nth-child(even) {
+    background: #faf5ff;
+}
+
+tbody tr:hover {
+    background: #f3e8ff;
+}
+
+/* =========================
+   SOURCE FILE COLUMN
+========================= */
+
+.source-file-cell {
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.source-file-label {
+    display: inline-block;
+    padding: 5px 8px;
+    border-radius: 7px;
+    font-size: 11px;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* =========================
+   DUPLICATE
+========================= */
+
+.duplicate-row {
+    background: #ffe5e5 !important;
+}
+
+.duplicate-row td {
+    color: #b91c1c;
+    font-weight: 600;
+}
+
+/* =========================
+   THEME SELECTOR
+========================= */
+
+.theme-selector {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.theme-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 3px solid #ffffff;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+    min-height: auto;
+    padding: 0;
+}
+
+.theme-btn:hover {
+    transform: scale(1.12);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+}
+
+.theme-btn.purple {
+    background: linear-gradient(135deg, #7c3aed, #a855f7);
+}
+
+.theme-btn.blue {
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+}
+
+.theme-btn.black {
+    background: linear-gradient(135deg, #111827, #374151);
+}
+
+.theme-btn.yellow-black {
+    background: linear-gradient(
+        135deg,
+        #facc15 50%,
+        #111827 50%
+    );
+}
+
+/* =========================
+   PRINT
+========================= */
+
+@media print {
+
+    body {
+        background: #fff;
+    }
+
+    .panel {
+        display: none;
+    }
+
+    .summary-sheet {
+        box-shadow: none;
+        border-radius: 0;
+        margin: 0;
+    }
+
+    .title {
+        font-size: 28px;
+        background: #7c3aed !important;
+        color: #fff !important;
+    }
+
+    th,
+    td {
+        font-size: 11px;
+        padding: 4px;
+    }
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 1400px) {
+
+    .controls {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+
+    .controls {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    #yearFilter,
+    #branchFilter,
+    #vehicleFilter,
+    #colourFilter {
+        min-height: 140px;
+    }
+}
+
+@media (max-width: 600px) {
+
+    h1 {
+        font-size: 28px;
+    }
+
+    .drop-zone {
+        padding: 40px 20px;
+        font-size: 18px;
+        min-height: 120px;
+    }
+
+    .controls {
+        grid-template-columns: 1fr;
+    }
+
+    .panel {
+        padding: 18px;
+    }
+
+    #yearFilter,
+    #branchFilter,
+    #vehicleFilter,
+    #colourFilter {
+        min-height: 120px;
+    }
+
+    .file-item {
+        align-items: flex-start;
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Advanced Stock Summary Generator</h1>
+
+    <div class="panel">
+
+        <!-- =========================
+             UPLOAD MODE
+        ========================== -->
+
+        <div class="upload-mode-wrapper">
+
+            <label for="uploadMode">
+                Excel Upload Mode
+            </label>
+
+            <select id="uploadMode">
+
+                <option value="single" selected>
+                    Single Excel File
+                </option>
+
+                <option value="multi">
+                    Multiple Excel Files
+                </option>
+
+            </select>
+
+        </div>
+
+        <!-- =========================
+             DROP ZONE
+        ========================== -->
+
+        <div id="dropZone" class="drop-zone">
+
+            <div id="dropZoneText">
+                Drag & Drop Excel File Here or Click to Select
+            </div>
+
+            <small id="dropZoneHint">
+                Supported formats: .xlsx and .xls
+            </small>
+
+            <input
+                type="file"
+                id="fileInput"
+                accept=".xlsx,.xls"
+                hidden
+            >
+
+        </div>
+
+        <!-- =========================
+             MULTI FILE LIST
+        ========================== -->
+
+        <div id="fileList" class="file-list">
+
+            <div class="file-list-header">
+
+                <strong>
+                    Uploaded Excel Files
+                </strong>
+
+                <button
+                    type="button"
+                    class="clear-files-btn"
+                    onclick="clearAllFiles()"
+                >
+                    Clear All
+                </button>
+
+            </div>
+
+            <div
+                id="fileListItems"
+                class="file-list-items"
+            ></div>
+
+        </div>
+
+        <!-- =========================
+             FILE LEGEND
+        ========================== -->
+
+        <div
+            id="fileLegend"
+            class="file-legend"
+        ></div>
+
+        <!-- =========================
+             CONTROLS
+        ========================== -->
+
+        <div class="controls">
+
+            <!-- Year -->
+
+            <div class="form-group">
+
+                <label for="yearFilter">
+                    Year of Model
+                </label>
+
+                <select
+                    id="yearFilter"
+                    multiple
+                    size="6"
+                ></select>
+
+            </div>
+
+            <!-- Branch -->
+
+            <div class="form-group">
+
+                <label for="branchFilter">
+                    Branch / Subdealer
+                </label>
+
+                <select
+                    id="branchFilter"
+                    multiple
+                    size="8"
+                ></select>
+
+            </div>
+
+            <!-- Vehicle -->
+
+            <div class="form-group">
+
+                <label for="vehicleFilter">
+                    Vehicle Series
+                </label>
+
+                <select
+                    id="vehicleFilter"
+                    multiple
+                    size="8"
+                ></select>
+
+            </div>
+
+            <!-- Colour -->
+
+            <div class="form-group">
+
+                <label for="colourFilter">
+                    Colour
+                </label>
+
+                <select
+                    id="colourFilter"
+                    multiple
+                    size="8"
+                ></select>
+
+            </div>
+
+            <!-- Unique -->
+
+            <div class="form-group">
+
+                <label>&nbsp;</label>
+
+                <button
+                    type="button"
+                    id="uniqueBtn"
+                    onclick="toggleUniqueMode()"
+                >
+                    Show Unique Chassis Only
+                </button>
+
+            </div>
+
+            <!-- Report Type -->
+
+            <div class="form-group">
+
+                <label for="reportType">
+                    Report Type
+                </label>
+
+                <select id="reportType">
+
+                    <option
+                        value="series"
+                        selected
+                    >
+                        Series Report
+                    </option>
+
+                    <option value="model">
+                        Separate Model Report
+                    </option>
+
+                    <option value="merged">
+                        Merged Table Report
+                    </option>
+
+                </select>
+
+            </div>
+
+            <!-- Custom Title -->
+
+            <div class="form-group">
+
+                <label for="customTitle">
+                    Custom Report Title
+                </label>
+
+                <input
+                    id="customTitle"
+                    type="text"
+                    placeholder="Optional custom title"
+                >
+
+            </div>
+
+            <!-- Generate -->
+
+            <div class="form-group">
+
+                <label>&nbsp;</label>
+
+                <button onclick="generateReports()">
+                    Generate Reports
+                </button>
+
+            </div>
+
+            <!-- JPG -->
+
+            <div class="form-group">
+
+                <label>&nbsp;</label>
+
+                <button onclick="downloadAllJPG()">
+                    Download JPG ZIP
+                </button>
+
+            </div>
+
+            <!-- Excel -->
+
+            <div class="form-group">
+
+                <label>&nbsp;</label>
+
+                <button onclick="downloadAllExcel()">
+                    Download Excel ZIP
+                </button>
+
+            </div>
+
+            <!-- PDF -->
+
+            <div class="form-group">
+
+                <label>&nbsp;</label>
+
+                <button onclick="downloadAllPDF()">
+                    Download PDF ZIP
+                </button>
+
+            </div>
+
+            <!-- Print -->
+
+            <div class="form-group">
+
+                <label>&nbsp;</label>
+
+                <button
+                    class="secondary"
+                    onclick="window.print()"
+                >
+                    Print
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- =========================
+         OUTPUT
+    ========================== -->
+
+    <div id="output"></div>
+
+</div>
+
+<script>
+
+/* ============================================================
+   GLOBAL VARIABLES
+============================================================ */
+
+let uniqueChassisMode = false;
+
+let rawRows = [];
+
+let groupedData = {};
+
+let uploadedFiles = [];
+
+let sourceFileColors = {};
+
+/*
+    Source-file colours.
+
+    These are deliberately soft so the Source File column
+    remains readable.
+*/
+
+const FILE_COLORS = [
+    {
+        background: '#dbeafe',
+        border: '#3b82f6',
+        text: '#1e3a8a'
+    },
+
+    {
+        background: '#dcfce7',
+        border: '#22c55e',
+        text: '#166534'
+    },
+
+    {
+        background: '#fef3c7',
+        border: '#f59e0b',
+        text: '#92400e'
+    },
+
+    {
+        background: '#fce7f3',
+        border: '#ec4899',
+        text: '#9d174d'
+    },
+
+    {
+        background: '#ede9fe',
+        border: '#8b5cf6',
+        text: '#5b21b6'
+    },
+
+    {
+        background: '#cffafe',
+        border: '#06b6d4',
+        text: '#155e75'
+    },
+
+    {
+        background: '#ffedd5',
+        border: '#f97316',
+        text: '#9a3412'
+    },
+
+    {
+        background: '#e0e7ff',
+        border: '#6366f1',
+        text: '#3730a3'
+    }
+];
+
+/* ============================================================
+   DOM
+============================================================ */
+
+const fileInput =
+    document.getElementById('fileInput');
+
+const dropZone =
+    document.getElementById('dropZone');
+
+const output =
+    document.getElementById('output');
+
+const uploadMode =
+    document.getElementById('uploadMode');
+
+const fileList =
+    document.getElementById('fileList');
+
+const fileListItems =
+    document.getElementById('fileListItems');
+
+const fileLegend =
+    document.getElementById('fileLegend');
+
+
+/* ============================================================
+   HTML ESCAPE
+============================================================ */
+
+function escapeHtml(value) {
+
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
+}
+
+
+/* ============================================================
+   SAFE FILE NAME
+============================================================ */
+
+function safeFileName(name) {
+
+    return String(name || 'Report')
+        .replace(/[\\/:*?"<>|]/g, '_')
+        .trim() || 'Report';
+
+}
+
+
+/* ============================================================
+   UPLOAD MODE CHANGE
+============================================================ */
+
+uploadMode.addEventListener(
+    'change',
+    function() {
+
+        clearAllFiles();
+
+        rawRows = [];
+
+        groupedData = {};
+
+        output.innerHTML = '';
+
+        resetFilters();
+
+        if (this.value === 'multi') {
+
+            fileInput.multiple = true;
+
+            document.getElementById(
+                'dropZoneText'
+            ).textContent =
+                'Drag & Drop Multiple Excel Files Here or Click to Select';
+
+            document.getElementById(
+                'dropZoneHint'
+            ).textContent =
+                'You can select multiple .xlsx or .xls files';
+
+        } else {
+
+            fileInput.multiple = false;
+
+            document.getElementById(
+                'dropZoneText'
+            ).textContent =
+                'Drag & Drop Excel File Here or Click to Select';
+
+            document.getElementById(
+                'dropZoneHint'
+            ).textContent =
+                'Supported formats: .xlsx and .xls';
+
+        }
+
+    }
+);
+
+
+/* ============================================================
+   DROP ZONE CLICK
+============================================================ */
+
+dropZone.addEventListener(
+    'click',
+    function() {
+
+        fileInput.click();
+
+    }
+);
+
+
+/* ============================================================
+   FILE INPUT
+============================================================ */
+
+fileInput.addEventListener(
+    'change',
+    function(e) {
+
+        const files =
+            Array.from(e.target.files || []);
+
+        if (!files.length) return;
+
+        handleSelectedFiles(files);
+
+    }
+);
+
+
+/* ============================================================
+   DRAG OVER
+============================================================ */
+
+dropZone.addEventListener(
+    'dragover',
+    function(e) {
+
+        e.preventDefault();
+
+        dropZone.classList.add('dragover');
+
+    }
+);
+
+
+/* ============================================================
+   DRAG LEAVE
+============================================================ */
+
+dropZone.addEventListener(
+    'dragleave',
+    function() {
+
+        dropZone.classList.remove('dragover');
+
+    }
+);
+
+
+/* ============================================================
+   DROP
+============================================================ */
+
+dropZone.addEventListener(
+    'drop',
+    function(e) {
+
+        e.preventDefault();
+
+        dropZone.classList.remove('dragover');
+
+        const files =
+            Array.from(e.dataTransfer.files || [])
+                .filter(file =>
+                    /\.(xlsx|xls)$/i.test(file.name)
+                );
+
+        if (!files.length) {
+
+            alert(
+                'Please drop valid Excel files (.xlsx or .xls).'
+            );
+
+            return;
+
+        }
+
+        handleSelectedFiles(files);
+
+    }
+);
+
+
+/* ============================================================
+   HANDLE SELECTED FILES
+============================================================ */
+
+function handleSelectedFiles(files) {
+
+    /*
+        Single-file mode:
+        only the first selected file is used.
+    */
+
+    if (uploadMode.value === 'single') {
+
+        const file = files[0];
+
+        uploadedFiles = [];
+
+        sourceFileColors = {};
+
+        processSingleFile(file);
+
+        return;
+
+    }
+
+
+    /*
+        Multi-file mode:
+        add files to existing selection.
+    */
+
+    files.forEach(file => {
+
+        const alreadyExists =
+            uploadedFiles.some(
+                item =>
+                    item.file.name === file.name &&
+                    item.file.size === file.size
+            );
+
+        if (!alreadyExists) {
+
+            uploadedFiles.push({
+                id: createFileId(),
+                file: file,
+                rows: [],
+                colorIndex:
+                    uploadedFiles.length %
+                    FILE_COLORS.length
+            });
+
+        }
+
+    });
+
+    assignSourceColors();
+
+    renderFileList();
+
+    processAllUploadedFiles();
+
+}
+
+
+/* ============================================================
+   CREATE FILE ID
+============================================================ */
+
+function createFileId() {
+
+    return (
+        Date.now().toString(36) +
+        Math.random()
+            .toString(36)
+            .substring(2, 9)
+    );
+
+}
+
+
+/* ============================================================
+   ASSIGN SOURCE COLORS
+============================================================ */
+
+function assignSourceColors() {
+
+    sourceFileColors = {};
+
+    uploadedFiles.forEach(
+        (item, index) => {
+
+            const color =
+                FILE_COLORS[
+                    index %
+                    FILE_COLORS.length
+                ];
+
+            item.colorIndex =
+                index %
+                FILE_COLORS.length;
+
+            sourceFileColors[
+                item.file.name
+            ] = color;
+
+        }
+    );
+
+}
+
+
+/* ============================================================
+   RENDER FILE LIST
+============================================================ */
+
+function renderFileList() {
+
+    if (
+        uploadMode.value !== 'multi' ||
+        uploadedFiles.length === 0
+    ) {
+
+        fileList.style.display = 'none';
+
+        fileListItems.innerHTML = '';
+
+        renderFileLegend();
+
+        return;
+
+    }
+
+    fileList.style.display = 'block';
+
+    fileListItems.innerHTML = '';
+
+    uploadedFiles.forEach(
+        (item, index) => {
+
+            const color =
+                FILE_COLORS[
+                    item.colorIndex
+                ];
+
+            const row =
+                document.createElement('div');
+
+            row.className = 'file-item';
+
+            row.innerHTML = `
+
+                <div class="file-name-wrapper">
+
+                    <span
+                        class="file-color-dot"
+                        style="
+                            background:${color.border};
+                        "
+                    ></span>
+
+                    <span class="file-name">
+                        ${escapeHtml(item.file.name)}
+                    </span>
+
+                </div>
+
+                <button
+                    type="button"
+                    class="file-remove"
+                    onclick="removeUploadedFile(${index})"
+                >
+                    Remove
+                </button>
+
+            `;
+
+            fileListItems.appendChild(row);
+
+        }
+    );
+
+    renderFileLegend();
+
+}
+
+
+/* ============================================================
+   REMOVE FILE
+============================================================ */
+
+function removeUploadedFile(index) {
+
+    uploadedFiles.splice(index, 1);
+
+    assignSourceColors();
+
+    renderFileList();
+
+    processAllUploadedFiles();
+
+}
+
+
+/* ============================================================
+   CLEAR ALL FILES
+============================================================ */
+
+function clearAllFiles() {
+
+    uploadedFiles = [];
+
+    sourceFileColors = {};
+
+    fileList.style.display = 'none';
+
+    fileListItems.innerHTML = '';
+
+    fileLegend.innerHTML = '';
+
+    fileInput.value = '';
+
+}
+
+
+/* ============================================================
+   FILE LEGEND
+============================================================ */
+
+function renderFileLegend() {
+
+    fileLegend.innerHTML = '';
+
+    if (
+        uploadMode.value !== 'multi' ||
+        uploadedFiles.length === 0
+    ) {
+
+        return;
+
+    }
+
+    uploadedFiles.forEach(
+        item => {
+
+            const color =
+                FILE_COLORS[
+                    item.colorIndex
+                ];
+
+            const legend =
+                document.createElement('div');
+
+            legend.className =
+                'file-legend-item';
+
+            legend.style.background =
+                color.background;
+
+            legend.style.color =
+                color.text;
+
+            legend.innerHTML = `
+
+                <span
+                    class="file-legend-dot"
+                    style="
+                        background:${color.border};
+                    "
+                ></span>
+
+                ${escapeHtml(item.file.name)}
+
+            `;
+
+            fileLegend.appendChild(legend);
+
+        }
+    );
+
+}
+
+
+/* ============================================================
+   PROCESS SINGLE FILE
+============================================================ */
+
+function processSingleFile(file) {
+
+    showSingleFileName(file.name);
+
+    readExcelFile(file)
+        .then(rows => {
+
+            rawRows =
+                rows.map(row => {
+
+                    row.sourceFile =
+                        file.name;
+
+                    return row;
+
+                });
+
+            if (!rawRows.length) {
+
+                alert(
+                    'No valid stock records found in the Excel file.'
+                );
+
+                return;
+
+            }
+
+            sourceFileColors = {
+
+                [file.name]:
+                    FILE_COLORS[0]
+
+            };
+
+            populateFilters();
+
+            generateReports();
+
+            alert(
+                `${rawRows.length} records loaded successfully.`
+            );
+
+        })
+        .catch(error => {
+
+            console.error(error);
+
+            alert(
+                'Error reading Excel file.'
+            );
+
+        });
+
+}
+
+
+/* ============================================================
+   PROCESS ALL MULTI FILES
+============================================================ */
+
+async function processAllUploadedFiles() {
+
+    if (
+        uploadMode.value !== 'multi'
+    ) {
+
+        return;
+
+    }
+
+    if (
+        uploadedFiles.length === 0
+    ) {
+
+        rawRows = [];
+
+        groupedData = {};
+
+        output.innerHTML = '';
+
+        resetFilters();
+
+        return;
+
+    }
+
+    try {
+
+        const allRows = [];
+
+        for (
+            const fileItem
+            of uploadedFiles
+        ) {
+
+            const rows =
+                await readExcelFile(
+                    fileItem.file
+                );
+
+            fileItem.rows =
+                rows.map(row => {
+
+                    row.sourceFile =
+                        fileItem.file.name;
+
+                    return row;
+
+                });
+
+            allRows.push(
+                ...fileItem.rows
+            );
+
+        }
+
+        rawRows = allRows;
+
+        if (!rawRows.length) {
+
+            alert(
+                'No valid stock records found in the uploaded Excel files.'
+            );
+
+            return;
+
+        }
+
+        assignSourceColors();
+
+        populateFilters();
+
+        generateReports();
+
+    }
+    catch(error) {
+
+        console.error(error);
+
+        alert(
+            'Error reading one or more Excel files.'
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   SHOW SINGLE FILE NAME
+============================================================ */
+
+function showSingleFileName(name) {
+
+    dropZone.innerHTML = `
+
+        <strong>
+            Selected File:
+        </strong>
+
+        <br>
+
+        ${escapeHtml(name)}
+
+        <br><br>
+
+        <small>
+            Click or drop another file to replace it.
+        </small>
+
+        <input
+            type="file"
+            id="fileInput"
+            accept=".xlsx,.xls"
+            hidden
+        >
+
+    `;
+
+    const newInput =
+        document.getElementById(
+            'fileInput'
+        );
+
+    newInput.addEventListener(
+        'change',
+        e => {
+
+            if (
+                e.target.files[0]
+            ) {
+
+                handleSelectedFiles(
+                    [e.target.files[0]]
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+/* ============================================================
+   READ EXCEL FILE
+============================================================ */
+
+function readExcelFile(file) {
+
+    return new Promise(
+        (resolve, reject) => {
+
+            const reader =
+                new FileReader();
+
+            reader.onload =
+                function(e) {
+
+                    try {
+
+                        const data =
+                            new Uint8Array(
+                                e.target.result
+                            );
+
+                        const workbook =
+                            XLSX.read(
+                                data,
+                                {
+                                    type: 'array'
+                                }
+                            );
+
+                        const sheet =
+                            workbook.Sheets[
+                                workbook.SheetNames[0]
+                            ];
+
+                        let rows =
+                            XLSX.utils.sheet_to_json(
+                                sheet,
+                                {
+                                    defval: ''
+                                }
+                            );
+
+                        /*
+                            If Vehicle column is missing,
+                            try starting from row 4.
+                        */
+
+                        if (
+                            !rows.length ||
+                            !(
+                                'Vehicle'
+                                in rows[0]
+                            )
+                        ) {
+
+                            rows =
+                                XLSX.utils.sheet_to_json(
+                                    sheet,
+                                    {
+                                        range: 3,
+                                        defval: ''
+                                    }
+                                );
+
+                        }
+
+                        const normalized =
+                            rows
+                                .map(normalizeRow)
+                                .filter(
+                                    r =>
+                                        r.vehicle &&
+                                        r.chassis
+                                );
+
+                        resolve(
+                            normalized
+                        );
+
+                    }
+                    catch(err) {
+
+                        reject(err);
+
+                    }
+
+                };
+
+            reader.onerror =
+                () =>
+                    reject(
+                        new Error(
+                            'Unable to read file.'
+                        )
+                    );
+
+            reader.readAsArrayBuffer(file);
+
+        }
+    );
+
+}
+
+
+/* ============================================================
+   GET YEAR FROM CHASSIS
+============================================================ */
+
+function getYearFromChassis(chassis) {
+
+    if (
+        !chassis ||
+        chassis.length < 10
+    ) {
+
+        return '';
+
+    }
+
+    const code =
+        chassis
+            .charAt(9)
+            .toUpperCase();
+
+    const yearMap = {
+
+        A: '2010',
+        B: '2011',
+        C: '2012',
+        D: '2013',
+        E: '2014',
+        F: '2015',
+        G: '2016',
+        H: '2017',
+        J: '2018',
+        K: '2019',
+        L: '2020',
+        M: '2021',
+        N: '2022',
+        P: '2023',
+        R: '2024',
+        S: '2025',
+        T: '2026',
+        V: '2027',
+        W: '2028',
+        X: '2029',
+        Y: '2030'
+
+    };
+
+    return (
+        yearMap[code] || ''
+    );
+
+}
+
+
+/* ============================================================
+   EXCEL DATE
+============================================================ */
+
+function excelDateToYear(value) {
+
+    if (!value) return '';
+
+    if (
+        typeof value === 'number'
+    ) {
+
+        const d =
+            XLSX.SSF.parse_date_code(
+                value
+            );
+
+        return d
+            ? String(d.y)
+            : '';
+
+    }
+
+    const text =
+        String(value).trim();
+
+    if (
+        /^\d{4}$/.test(text)
+    ) {
+
+        return text;
+
+    }
+
+    const dt =
+        new Date(text);
+
+    return isNaN(dt)
+        ? ''
+        : String(
+            dt.getFullYear()
+        );
+
+}
+
+
+/* ============================================================
+   NORMALIZE ROW
+============================================================ */
+
+function normalizeRow(r) {
+
+    const chassis =
+        String(
+            r['Chassis Number'] || ''
+        ).trim();
+
+    return {
+
+        subdealer:
+            String(
+                r.Subdealer || ''
+            ).trim(),
+
+        vehicle:
+            String(
+                r.Vehicle || ''
+            ).trim(),
+
+        model:
+            extractModel(
+                r.Vehicle || ''
+            ),
+
+        chassis:
+            chassis,
+
+        engine:
+            String(
+                r['Engine Number'] || ''
+            ).trim(),
+
+        colour:
+            String(
+                r.Colour || ''
+            ).trim(),
+
+        year:
+            getYearFromChassis(
+                chassis
+            ),
+
+        sourceFile: ''
+
+    };
+
+}
+
+
+/* ============================================================
+   EXTRACT MODEL
+============================================================ */
+
+function extractModel(vehicle) {
+
+    const v =
+        String(
+            vehicle || ''
+        ).toUpperCase();
+
+    const seriesMap = {
+
+        'JUPITER': [
+            'JUPITER'
+        ],
+
+        'NTORQ': [
+            'NTORQ'
+        ],
+
+        'ZEST': [
+            'ZEST'
+        ],
+
+        'RAIDER': [
+            'RAIDER'
+        ],
+
+        'IQUBE': [
+            'IQUBE',
+            'I QUBE',
+            'IQUIBE',
+            'I QUIBE'
+        ],
+
+        'XL100': [
+            'XL100',
+            'XL 100'
+        ],
+
+        'APACHE': [
+            'APACHE',
+            'RTR',
+            'RR 310'
+        ],
+
+        'RADEON': [
+            'RADEON'
+        ],
+
+        'RONIN': [
+            'RONIN'
+        ],
+
+        'SPORT': [
+            'SPORT'
+        ],
+
+        'STAR CITY+': [
+            'STAR CITY+',
+            'STAR CITY'
+        ],
+
+        'ORBITER': [
+            'ORBITER'
+        ],
+
+        'XL SUPER': [
+            'XL SUPER'
+        ]
+
+    };
+
+    for (
+        const [series, keywords]
+        of Object.entries(seriesMap)
+    ) {
+
+        for (
+            const keyword
+            of keywords
+        ) {
+
+            if (
+                v.includes(keyword)
+            ) {
+
+                return series;
+
+            }
+
+        }
+
+    }
+
+    return v
+        .split(/\s+/)
+        .slice(0, 3)
+        .join(' ');
+
+}
+
+
+/* ============================================================
+   POPULATE FILTERS
+============================================================ */
+
+function populateFilters() {
+
+    const yearFilter =
+        document.getElementById(
+            'yearFilter'
+        );
+
+    const branchFilter =
+        document.getElementById(
+            'branchFilter'
+        );
+
+    const vehicleFilter =
+        document.getElementById(
+            'vehicleFilter'
+        );
+
+    const colourFilter =
+        document.getElementById(
+            'colourFilter'
+        );
+
+    const years =
+        [
+            ...new Set(
+                rawRows.map(
+                    r => r.year
+                )
+            )
+        ]
+        .filter(Boolean)
+        .sort();
+
+    const branches =
+        [
+            ...new Set(
+                rawRows.map(
+                    r => r.subdealer
+                )
+            )
+        ]
+        .filter(Boolean)
+        .sort();
+
+    const vehicles =
+        [
+            ...new Set(
+                rawRows.map(
+                    r => r.model
+                )
+            )
+        ]
+        .filter(Boolean)
+        .sort();
+
+    const colours =
+        [
+            ...new Set(
+                rawRows.map(
+                    r => r.colour
+                )
+            )
+        ]
+        .filter(Boolean)
+        .sort();
+
+    yearFilter.innerHTML = '';
+
+    branchFilter.innerHTML = '';
+
+    vehicleFilter.innerHTML = '';
+
+    colourFilter.innerHTML = '';
+
+    years.forEach(y => {
+
+        yearFilter.innerHTML += `
+
+            <option value="${escapeHtml(y)}">
+                ${escapeHtml(y)}
+            </option>
+
+        `;
+
+    });
+
+    branches.forEach(b => {
+
+        branchFilter.innerHTML += `
+
+            <option value="${escapeHtml(b)}">
+                ${escapeHtml(b)}
+            </option>
+
+        `;
+
+    });
+
+    vehicles.forEach(v => {
+
+        vehicleFilter.innerHTML += `
+
+            <option value="${escapeHtml(v)}">
+                ${escapeHtml(v)}
+            </option>
+
+        `;
+
+    });
+
+    colours.forEach(c => {
+
+        colourFilter.innerHTML += `
+
+            <option value="${escapeHtml(c)}">
+                ${escapeHtml(c)}
+            </option>
+
+        `;
+
+    });
+
+}
+
+
+/* ============================================================
+   RESET FILTERS
+============================================================ */
+
+function resetFilters() {
+
+    [
+        'yearFilter',
+        'branchFilter',
+        'vehicleFilter',
+        'colourFilter'
+    ].forEach(id => {
+
+        const element =
+            document.getElementById(id);
+
+        if (element) {
+
+            element.innerHTML = '';
+
+        }
+
+    });
+
+}
+
+
+/* ============================================================
+   UNIQUE CHASSIS MODE
+============================================================ */
+
+function toggleUniqueMode() {
+
+    uniqueChassisMode =
+        !uniqueChassisMode;
+
+    document.getElementById(
+        'uniqueBtn'
+    ).textContent =
+        uniqueChassisMode
+            ? 'Showing Unique Chassis Only'
+            : 'Show Unique Chassis Only';
+
+    if (rawRows.length) {
+
+        generateReports();
+
+    }
+
+}
+
+
+/* ============================================================
+   GET SOURCE COLOR
+============================================================ */
+
+function getSourceColor(
+    sourceFile
+) {
+
+    if (
+        sourceFileColors[sourceFile]
+    ) {
+
+        return sourceFileColors[
+            sourceFile
+        ];
+
+    }
+
+    return FILE_COLORS[0];
+
+}
+
+
+/* ============================================================
+   GET FILTERED ROWS
+============================================================ */
+
+function getFilteredRows() {
+
+    const selectedYears =
+        Array.from(
+            document
+                .getElementById(
+                    'yearFilter'
+                )
+                .selectedOptions
+        )
+        .map(
+            option =>
+                option.value
+        );
+
+    const selectedColours =
+        Array.from(
+            document
+                .getElementById(
+                    'colourFilter'
+                )
+                .selectedOptions
+        )
+        .map(
+            option =>
+                option.value
+        );
+
+    const selectedBranches =
+        Array.from(
+            document
+                .getElementById(
+                    'branchFilter'
+                )
+                .selectedOptions
+        )
+        .map(
+            option =>
+                option.value
+        );
+
+    const selectedVehicles =
+        Array.from(
+            document
+                .getElementById(
+                    'vehicleFilter'
+                )
+                .selectedOptions
+        )
+        .map(
+            option =>
+                option.value
+        );
+
+    return rawRows.filter(
+        r =>
+
+            (
+                selectedYears.length === 0 ||
+                selectedYears.includes(
+                    r.year
+                )
+            )
+
+            &&
+
+            (
+                selectedBranches.length === 0 ||
+                selectedBranches.includes(
+                    r.subdealer
+                )
+            )
+
+            &&
+
+            (
+                selectedVehicles.length === 0 ||
+                selectedVehicles.includes(
+                    r.model
+                )
+            )
+
+            &&
+
+            (
+                selectedColours.length === 0 ||
+                selectedColours.includes(
+                    r.colour
+                )
+            )
+
+    );
+
+}
+
+
+/* ============================================================
+   GENERATE REPORTS
+============================================================ */
+
+function generateReports() {
+
+    if (
+        rawRows.length === 0
+    ) {
+
+        alert(
+            'Please upload a file first.'
+        );
+
+        return;
+
+    }
+
+    const customTitle =
+        document
+            .getElementById(
+                'customTitle'
+            )
+            .value
+            .trim();
+
+    const reportType =
+        document
+            .getElementById(
+                'reportType'
+            )
+            .value;
+
+    let rows =
+        getFilteredRows();
+
+    if (!rows.length) {
+
+        output.innerHTML = `
+
+            <p
+                style="
+                    text-align:center;
+                    font-weight:bold;
+                "
+            >
+                No records found.
+            </p>
+
+        `;
+
+        groupedData = {};
+
+        return;
+
+    }
+
+
+    /* ========================================================
+       DUPLICATE COUNT
+    ======================================================== */
+
+    const chassisCount = {};
+
+    rows.forEach(r => {
+
+        const chassis =
+            String(
+                r.chassis || ''
+            )
+            .trim()
+            .toUpperCase();
+
+        if (!chassis) return;
+
+        chassisCount[chassis] =
+            (
+                chassisCount[chassis] || 0
+            ) + 1;
+
+    });
+
+    const duplicateCount =
+        Object.values(
+            chassisCount
+        )
+        .filter(
+            count =>
+                count > 1
+        )
+        .length;
+
+
+    /* ========================================================
+       UNIQUE MODE
+    ======================================================== */
+
+    if (
+        uniqueChassisMode
+    ) {
+
+        const seen =
+            new Set();
+
+        rows =
+            rows.filter(r => {
+
+                const chassis =
+                    String(
+                        r.chassis || ''
+                    )
+                    .trim()
+                    .toUpperCase();
+
+                if (!chassis) {
+                    return true;
+                }
+
+                if (
+                    seen.has(chassis)
+                ) {
+
+                    return false;
+
+                }
+
+                seen.add(chassis);
+
+                return true;
+
+            });
+
+    }
+
+
+    /* ========================================================
+       OUTPUT SUMMARY
+    ======================================================== */
+
+    const multiFileText =
+        uploadMode.value === 'multi'
+            ? `
+                <br>
+                Files Combined:
+                ${uploadedFiles.length}
+            `
+            : '';
+
+    output.innerHTML = `
+
+        <div
+            style="
+                background:#fff3cd;
+                border:1px solid #ffe69c;
+                padding:15px;
+                margin-bottom:20px;
+                border-radius:10px;
+                font-size:16px;
+                font-weight:bold;
+                text-align:center;
+            "
+        >
+
+            🚨 Duplicate Chassis Found Across
+            Filtered Stock:
+            ${duplicateCount}
+
+            <br>
+
+            Total Records Displayed:
+            ${rows.length}
+
+            ${uniqueChassisMode
+                ? '<br>Unique Chassis Mode Enabled'
+                : ''
+            }
+
+            ${multiFileText}
+
+        </div>
+
+    `;
+
+
+    /* ========================================================
+       FILE LEGEND
+    ======================================================== */
+
+    if (
+        uploadMode.value === 'multi'
+    ) {
+
+        const legend =
+            document.createElement(
+                'div'
+            );
+
+        legend.className =
+            'file-legend';
+
+        uploadedFiles.forEach(
+            item => {
+
+                const color =
+                    getSourceColor(
+                        item.file.name
+                    );
+
+                const legendItem =
+                    document.createElement(
+                        'div'
+                    );
+
+                legendItem.className =
+                    'file-legend-item';
+
+                legendItem.style.background =
+                    color.background;
+
+                legendItem.style.color =
+                    color.text;
+
+                legendItem.innerHTML = `
+
+                    <span
+                        class="file-legend-dot"
+                        style="
+                            background:
+                                ${color.border};
+                        "
+                    ></span>
+
+                    ${escapeHtml(
+                        item.file.name
+                    )}
+
+                `;
+
+                legend.appendChild(
+                    legendItem
+                );
+
+            }
+        );
+
+        output.appendChild(
+            legend
+        );
+
+    }
+
+
+    /* ========================================================
+       GROUP DATA
+    ======================================================== */
+
+    groupedData = {};
+
+
+    if (
+        reportType === 'merged'
+    ) {
+
+        groupedData[
+            'ALL STOCK'
+        ] = rows;
+
+    }
+
+    else if (
+        reportType === 'series'
+    ) {
+
+        rows.forEach(r => {
+
+            const key =
+                `${r.model}|${r.year}`;
+
+            if (
+                !groupedData[key]
+            ) {
+
+                groupedData[key] =
+                    [];
+
+            }
+
+            groupedData[key].push(r);
+
+        });
+
+    }
+
+    else if (
+        reportType === 'model'
+    ) {
+
+        rows.forEach(r => {
+
+            const key =
+                `${r.vehicle}|${r.year}`;
+
+            if (
+                !groupedData[key]
+            ) {
+
+                groupedData[key] =
+                    [];
+
+            }
+
+            groupedData[key].push(r);
+
+        });
+
+    }
+
+
+    /* ========================================================
+       CREATE TABLES
+    ======================================================== */
+
+    Object.keys(groupedData)
+        .sort()
+        .forEach(key => {
+
+            let title;
+
+            if (
+                key === 'ALL STOCK'
+            ) {
+
+                title =
+                    customTitle ||
+                    'ALL STOCK SUMMARY';
+
+            }
+
+            else {
+
+                const parts =
+                    key.split('|');
+
+                const model =
+                    parts[0];
+
+                const yr =
+                    parts[1] || '';
+
+                title =
+                    customTitle ||
+                    `${model} ${yr} MODEL STOCK`;
+
+            }
+
+
+            const section =
+                document.createElement(
+                    'div'
+                );
+
+            section.className =
+                'summary-sheet';
+
+
+            let html = `
+
+                <div class="title">
+                    ${escapeHtml(title)}
+                </div>
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>SNo</th>
+
+                            ${
+                                uploadMode.value === 'multi'
+                                ? '<th>Source File</th>'
+                                : ''
+                            }
+
+                            <th>Subdealer</th>
+
+                            <th>Vehicle</th>
+
+                            <th>Chassis Number</th>
+
+                            <th>Engine Number</th>
+
+                            <th>Colour</th>
+
+                            <th>Year Of Model</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+            `;
+
+
+            groupedData[key]
+                .forEach(
+                    (r, i) => {
+
+                        const chassis =
+                            String(
+                                r.chassis || ''
+                            )
+                            .trim()
+                            .toUpperCase();
+
+                        const isDuplicate =
+                            chassisCount[
+                                chassis
+                            ] > 1;
+
+                        const sourceColor =
+                            getSourceColor(
+                                r.sourceFile
+                            );
+
+
+                        let rowStyle =
+                            '';
+
+                        if (
+                            isDuplicate
+                        ) {
+
+                            rowStyle =
+                                `
+                                background:#ffe5e5;
+                                color:#b91c1c;
+                                font-weight:700;
+                                `;
+
+                        }
+
+
+                        html += `
+
+                            <tr
+                                class="${
+                                    isDuplicate
+                                        ? 'duplicate-row'
+                                        : ''
+                                }"
+                                style="${rowStyle}"
+                            >
+
+                                <td>
+                                    ${i + 1}
+                                </td>
+
+                        `;
+
+
+                        if (
+                            uploadMode.value ===
+                            'multi'
+                        ) {
+
+                            html += `
+
+                                <td
+                                    class="source-file-cell"
+                                >
+
+                                    <span
+                                        class="
+                                            source-file-label
+                                        "
+                                        title="${escapeHtml(
+                                            r.sourceFile
+                                        )}"
+                                        style="
+                                            background:
+                                                ${sourceColor.background};
+
+                                            border:
+                                                1px solid
+                                                ${sourceColor.border};
+
+                                            color:
+                                                ${sourceColor.text};
+                                        "
+                                    >
+
+                                        ${escapeHtml(
+                                            r.sourceFile
+                                        )}
+
+                                    </span>
+
+                                </td>
+
+                            `;
+
+                        }
+
+
+                        html += `
+
+                                <td>
+                                    ${escapeHtml(
+                                        r.subdealer
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${escapeHtml(
+                                        r.vehicle
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${escapeHtml(
+                                        r.chassis
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${escapeHtml(
+                                        r.engine
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${escapeHtml(
+                                        r.colour
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${escapeHtml(
+                                        r.year
+                                    )}
+                                </td>
+
+                            </tr>
+
+                        `;
+
+                    }
+                );
+
+
+            const totalColspan =
+                uploadMode.value === 'multi'
+                    ? 7
+                    : 6;
+
+
+            html += `
+
+                    <tr
+                        style="
+                            font-weight:bold;
+                            background:#ede9fe;
+                        "
+                    >
+
+                        <td
+                            colspan="${totalColspan}"
+                        >
+                            TOTAL STOCK
+                        </td>
+
+                        <td>
+                            ${groupedData[key].length}
+                        </td>
+
+                    </tr>
+
+                    </tbody>
+
+                </table>
+
+            `;
+
+
+            section.innerHTML =
+                html;
+
+            output.appendChild(
+                section
+            );
+
+        });
+
+}
+
+
+/* ============================================================
+   DOWNLOAD JPG
+============================================================ */
+
+async function downloadAllJPG() {
+
+    if (
+        Object.keys(groupedData)
+            .length === 0
+    ) {
+
+        alert(
+            'No reports generated.'
+        );
+
+        return;
+
+    }
+
+    const zip =
+        new JSZip();
+
+    const sections =
+        document.querySelectorAll(
+            '.summary-sheet'
+        );
+
+    for (
+        const section
+        of sections
+    ) {
+
+        const title =
+            safeFileName(
+                section
+                    .querySelector(
+                        '.title'
+                    )
+                    .textContent
+            );
+
+        const canvas =
+            await html2canvas(
+                section,
+                {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor:
+                        '#ffffff'
+                }
+            );
+
+        const blob =
+            await new Promise(
+                resolve =>
+                    canvas.toBlob(
+                        resolve,
+                        'image/jpeg',
+                        0.95
+                    )
+            );
+
+        zip.file(
+            `${title}.jpg`,
+            blob
+        );
+
+    }
+
+    const zipBlob =
+        await zip.generateAsync(
+            {
+                type: 'blob'
+            }
+        );
+
+    saveBlob(
+        zipBlob,
+        'Stock_Summaries_JPG.zip'
+    );
+
+}
+
+
+/* ============================================================
+   DOWNLOAD EXCEL
+============================================================ */
+
+async function downloadAllExcel() {
+
+    if (
+        Object.keys(groupedData)
+            .length === 0
+    ) {
+
+        alert(
+            'No reports generated.'
+        );
+
+        return;
+
+    }
+
+    const zip =
+        new JSZip();
+
+    const masterWorkbook =
+        XLSX.utils.book_new();
+
+
+    for (
+        const [key, rows]
+        of Object.entries(
+            groupedData
+        )
+    ) {
+
+        const [model, yr] =
+            key.split('|');
+
+
+        /* ====================================================
+           EXCEL DATA
+        ==================================================== */
+
+        const sheetData =
+            rows.map(
+                (r, i) => {
+
+                    const data = {
+
+                        SNo:
+                            i + 1
+
+                    };
+
+                    if (
+                        uploadMode.value ===
+                        'multi'
+                    ) {
+
+                        data[
+                            'Source File'
+                        ] =
+                            r.sourceFile;
+
+                    }
+
+                    data.Subdealer =
+                        r.subdealer;
+
+                    data.Vehicle =
+                        r.vehicle;
+
+                    data[
+                        'Chassis Number'
+                    ] =
+                        r.chassis;
+
+                    data[
+                        'Engine Number'
+                    ] =
+                        r.engine;
+
+                    data.Colour =
+                        r.colour;
+
+                    data[
+                        'Year Of Model'
+                    ] =
+                        r.year;
+
+                    return data;
+
+                }
+            );
+
+
+        const ws =
+            XLSX.utils.json_to_sheet(
+                sheetData
+            );
+
+
+        /* ====================================================
+           EXCEL COLUMN WIDTHS
+        ==================================================== */
+
+        ws['!cols'] = [
+
+            {
+                wch: 7
+            },
+
+            ...(uploadMode.value === 'multi'
+                ? [
+                    {
+                        wch: 32
+                    }
+                ]
+                : []
+            ),
+
+            {
+                wch: 22
+            },
+
+            {
+                wch: 25
+            },
+
+            {
+                wch: 25
+            },
+
+            {
+                wch: 25
+            },
+
+            {
+                wch: 18
+            },
+
+            {
+                wch: 16
+            }
+
+        ];
+
+
+        /* ====================================================
+           INDIVIDUAL WORKBOOK
+        ==================================================== */
+
+        const singleWb =
+            XLSX.utils.book_new();
+
+        XLSX.utils.book_append_sheet(
+            singleWb,
+            ws,
+            'Summary'
+        );
+
+        const singleFile =
+            XLSX.write(
+                singleWb,
+                {
+                    bookType: 'xlsx',
+                    type: 'array'
+                }
+            );
+
+
+        const excelName =
+            key === 'ALL STOCK'
+                ? 'ALL_STOCK.xlsx'
+                : `${safeFileName(
+                    model
+                )}_${safeFileName(
+                    yr
+                )}.xlsx`;
+
+
+        zip.file(
+            excelName,
+            singleFile
+        );
+
+
+        /* ====================================================
+           MASTER WORKBOOK
+        ==================================================== */
+
+        let sheetName =
+            key === 'ALL STOCK'
+                ? 'ALL STOCK'
+                : `${model}_${yr}`;
+
+        sheetName =
+            safeFileName(
+                sheetName
+            ).substring(
+                0,
+                31
+            );
+
+        /*
+            Make sure duplicate sheet names
+            don't break Excel.
+        */
+
+        let originalName =
+            sheetName;
+
+        let counter = 1;
+
+        while (
+            masterWorkbook.SheetNames
+                .includes(sheetName)
+        ) {
+
+            sheetName =
+                (
+                    originalName
+                    .substring(
+                        0,
+                        27
+                    )
+                    +
+                    `_${counter}`
+                );
+
+            counter++;
+
+        }
+
+
+        XLSX.utils.book_append_sheet(
+            masterWorkbook,
+            ws,
+            sheetName
+        );
+
+    }
+
+
+    /* ========================================================
+       MASTER FILE
+    ======================================================== */
+
+    const masterArray =
+        XLSX.write(
+            masterWorkbook,
+            {
+                bookType: 'xlsx',
+                type: 'array'
+            }
+        );
+
+    zip.file(
+        'All_Stock_Summaries.xlsx',
+        masterArray
+    );
+
+
+    /* ========================================================
+       ZIP
+    ======================================================== */
+
+    const blob =
+        await zip.generateAsync(
+            {
+                type: 'blob'
+            }
+        );
+
+    saveBlob(
+        blob,
+        'Stock_Summaries_Excel.zip'
+    );
+
+}
+
+
+/* ============================================================
+   DOWNLOAD PDF
+============================================================ */
+
+async function downloadAllPDF() {
+
+    if (
+        Object.keys(groupedData)
+            .length === 0
+    ) {
+
+        alert(
+            'No reports generated.'
+        );
+
+        return;
+
+    }
+
+    const zip =
+        new JSZip();
+
+    const sections =
+        document.querySelectorAll(
+            '.summary-sheet'
+        );
+
+    const {
+        jsPDF
+    } = window.jspdf;
+
+
+    const combinedPdf =
+        new jsPDF(
+            {
+                orientation:
+                    'landscape',
+
+                unit: 'pt',
+
+                format: 'a4'
+            }
+        );
+
+
+    for (
+        let i = 0;
+        i < sections.length;
+        i++
+    ) {
+
+        const section =
+            sections[i];
+
+
+        const title =
+            safeFileName(
+                section
+                    .querySelector(
+                        '.title'
+                    )
+                    .textContent
+            );
+
+
+        const canvas =
+            await html2canvas(
+                section,
+                {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor:
+                        '#ffffff'
+                }
+            );
+
+
+        const imgData =
+            canvas.toDataURL(
+                'image/jpeg',
+                1.0
+            );
+
+
+        const pageWidth =
+            842;
+
+        const pageHeight =
+            595;
+
+
+        const ratio =
+            Math.min(
+                pageWidth /
+                    canvas.width,
+
+                pageHeight /
+                    canvas.height
+            );
+
+
+        const imgWidth =
+            canvas.width *
+            ratio;
+
+        const imgHeight =
+            canvas.height *
+            ratio;
+
+
+        const x =
+            (
+                pageWidth -
+                imgWidth
+            ) / 2;
+
+        const y =
+            (
+                pageHeight -
+                imgHeight
+            ) / 2;
+
+
+        /* ====================================================
+           INDIVIDUAL PDF
+        ==================================================== */
+
+        const singlePdf =
+            new jsPDF(
+                {
+                    orientation:
+                        'landscape',
+
+                    unit: 'pt',
+
+                    format: 'a4'
+                }
+            );
+
+
+        singlePdf.addImage(
+            imgData,
+            'JPEG',
+            x,
+            y,
+            imgWidth,
+            imgHeight
+        );
+
+
+        zip.file(
+            `${title}.pdf`,
+            singlePdf.output(
+                'arraybuffer'
+            )
+        );
+
+
+        /* ====================================================
+           COMBINED PDF
+        ==================================================== */
+
+        if (i > 0) {
+
+            combinedPdf.addPage();
+
+        }
+
+        combinedPdf.addImage(
+            imgData,
+            'JPEG',
+            x,
+            y,
+            imgWidth,
+            imgHeight
+        );
+
+    }
+
+
+    zip.file(
+        'All_Stock_Summaries.pdf',
+        combinedPdf.output(
+            'arraybuffer'
+        )
+    );
+
+
+    const blob =
+        await zip.generateAsync(
+            {
+                type: 'blob'
+            }
+        );
+
+
+    saveBlob(
+        blob,
+        'Stock_Summaries_PDF.zip'
+    );
+
+}
+
+
+/* ============================================================
+   SAVE FILE
+============================================================ */
+
+function saveBlob(
+    blob,
+    filename
+) {
+
+    const link =
+        document.createElement(
+            'a'
+        );
+
+    link.href =
+        URL.createObjectURL(
+            blob
+        );
+
+    link.download =
+        filename;
+
+    document.body.appendChild(
+        link
+    );
+
+    link.click();
+
+    document.body.removeChild(
+        link
+    );
+
+    setTimeout(
+        () => {
+
+            URL.revokeObjectURL(
+                link.href
+            );
+
+        },
+        1000
+    );
+
+}
+
+
+/* ============================================================
+   AUTO GENERATE WHEN FILTERS CHANGE
+============================================================ */
+
+[
+    'yearFilter',
+    'branchFilter',
+    'vehicleFilter',
+    'colourFilter',
+    'reportType'
+].forEach(id => {
+
+    document
+        .getElementById(id)
+        .addEventListener(
+            'change',
+            function() {
+
+                if (
+                    rawRows.length
+                ) {
+
+                    generateReports();
+
+                }
+
+            }
+        );
+
+});
+
+
+/* ============================================================
+   CUSTOM TITLE
+============================================================ */
+
+document
+    .getElementById(
+        'customTitle'
+    )
+    .addEventListener(
+        'input',
+        function() {
+
+            if (
+                rawRows.length
+            ) {
+
+                generateReports();
+
+            }
+
+        }
+    );
+
+
+/* ============================================================
+   THEME SYSTEM
+============================================================ */
+
+function setTheme(
+    theme
+) {
+
+    const root =
+        document.documentElement;
+
+    if (
+        theme === 'blue'
+    ) {
+
+        root.style.setProperty(
+            '--primary',
+            '#2563eb'
+        );
+
+        root.style.setProperty(
+            '--primary-dark',
+            '#1d4ed8'
+        );
+
+        root.style.setProperty(
+            '--primary-light',
+            '#dbeafe'
+        );
+
+        root.style.setProperty(
+            '--secondary',
+            '#3b82f6'
+        );
+
+    }
+
+    else if (
+        theme === 'black'
+    ) {
+
+        root.style.setProperty(
+            '--primary',
+            '#111827'
+        );
+
+        root.style.setProperty(
+            '--primary-dark',
+            '#030712'
+        );
+
+        root.style.setProperty(
+            '--primary-light',
+            '#f3f4f6'
+        );
+
+        root.style.setProperty(
+            '--secondary',
+            '#374151'
+        );
+
+    }
+
+    else if (
+        theme === 'yellow-black'
+    ) {
+
+        root.style.setProperty(
+            '--primary',
+            '#ca8a04'
+        );
+
+        root.style.setProperty(
+            '--primary-dark',
+            '#a16207'
+        );
+
+        root.style.setProperty(
+            '--primary-light',
+            '#fef9c3'
+        );
+
+        root.style.setProperty(
+            '--secondary',
+            '#111827'
+        );
+
+    }
+
+    else {
+
+        root.style.setProperty(
+            '--primary',
+            '#7c3aed'
+        );
+
+        root.style.setProperty(
+            '--primary-dark',
+            '#6d28d9'
+        );
+
+        root.style.setProperty(
+            '--primary-light',
+            '#f3e8ff'
+        );
+
+        root.style.setProperty(
+            '--secondary',
+            '#8b5cf6'
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   INITIAL STATE
+============================================================ */
+
+setTheme('purple');
+
+</script>
+
+</body>
+</html>

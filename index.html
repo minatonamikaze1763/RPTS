@@ -3,17 +3,15 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
 <title>Advanced Stock Summary Generator</title>
+
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
 <style>
-/* =========================
-   MODERN PURPLE THEME
-========================= */
-
 :root {
     --primary: #7c3aed;
     --primary-dark: #6d28d9;
@@ -28,13 +26,19 @@
     --radius: 16px;
 }
 
-/* =========================
-   GENERAL
-========================= */
+* {
+    box-sizing: border-box;
+}
+
 body {
     font-family: "Segoe UI", Arial, sans-serif;
     margin: 0;
-    background: linear-gradient(135deg, #f5f3ff 0%, #faf5ff 50%, #ffffff 100%);
+    background: linear-gradient(
+        135deg,
+        #f5f3ff 0%,
+        #faf5ff 50%,
+        #ffffff 100%
+    );
     color: var(--text);
 }
 
@@ -53,9 +57,6 @@ h1 {
     letter-spacing: -0.5px;
 }
 
-/* =========================
-   PANEL
-========================= */
 .panel {
     background: var(--card);
     padding: 28px;
@@ -65,28 +66,40 @@ h1 {
     margin-bottom: 30px;
 }
 
-/* =========================
-   DROP ZONE
-========================= */
+/* DROP ZONE */
+
 .drop-zone {
     border: 3px dashed #c4b5fd;
     background: linear-gradient(135deg, #faf5ff, #f5f3ff);
     border-radius: 20px;
-    padding: 60px 30px;
-    min-height: 160px;
+    padding: 50px 30px;
+    min-height: 150px;
     text-align: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 600;
     color: var(--primary);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-direction: column;
-    margin-bottom: 28px;
+    margin-bottom: 20px;
 }
 
+.clear-files-btn {
+    border: none;
+    background: #64748b;
+    color: white;
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.clear-files-btn:hover {
+    background: #475569;
+}
 .drop-zone:hover {
     border-color: var(--primary);
     background: #f3e8ff;
@@ -106,9 +119,127 @@ h1 {
     margin-top: 10px;
 }
 
-/* =========================
-   CONTROLS GRID
-========================= */
+/* UPLOAD MODE */
+
+.upload-mode-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+}
+
+.upload-mode-row label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #6d28d9;
+}
+
+.upload-mode-row select {
+    width: auto;
+    min-width: 220px;
+}
+
+/* FILE LIST */
+
+.file-manager {
+    margin-bottom: 24px;
+}
+
+.file-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fafafa;
+}
+
+.file-item-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.file-color-dot {
+    width: 13px;
+    height: 13px;
+    min-width: 13px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.file-name {
+    font-size: 13px;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.file-count {
+    font-size: 11px;
+    color: #6b7280;
+    margin-left: 4px;
+}
+
+.file-remove {
+    border: none;
+    background: #fee2e2 !important;
+    color: #b91c1c !important;
+    min-height: 34px !important;
+    width: auto !important;
+    padding: 0 12px !important;
+    box-shadow: none !important;
+}
+
+.file-remove:hover {
+    background: #fecaca !important;
+}
+
+.file-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.file-actions button {
+    width: auto !important;
+    min-height: 36px !important;
+    padding: 0 14px !important;
+}
+
+/* LEGEND */
+
+.file-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #faf5ff;
+    border: 1px solid #ede9fe;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* CONTROLS */
+
 .controls {
     display: grid;
     grid-template-columns:
@@ -121,9 +252,19 @@ h1 {
     align-items: start;
 }
 
-/* =========================
-   INPUTS & SELECTS
-========================= */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #6d28d9;
+    margin-left: 2px;
+}
+
 select,
 input {
     width: 100%;
@@ -132,7 +273,6 @@ input {
     border-radius: 12px;
     font-size: 14px;
     background: #fff;
-    box-sizing: border-box;
     transition: all 0.2s ease;
     color: var(--text);
 }
@@ -144,23 +284,22 @@ input:focus {
     box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.12);
 }
 
-/* Multi-select boxes */
 #yearFilter,
 #branchFilter,
-#vehicleFilter {
+#vehicleFilter,
+#colourFilter {
     min-height: 180px;
     font-size: 13px;
 }
 
-/* Report type and title */
 #reportType,
+#pivotRowField,
 #customTitle {
     min-height: 46px;
 }
 
-/* =========================
-   BUTTON GROUP
-========================= */
+/* BUTTONS */
+
 .controls button {
     min-height: 44px;
     padding: 0 16px;
@@ -190,14 +329,12 @@ input:focus {
     background: #475569;
 }
 
-/* Make buttons span full width in a neat layout */
 .controls button {
     width: 100%;
 }
 
-/* =========================
-   SUMMARY SHEETS
-========================= */
+/* SUMMARY */
+
 .summary-sheet {
     background: #fff;
     margin: 30px 0;
@@ -218,9 +355,12 @@ input:focus {
     letter-spacing: 0.5px;
 }
 
-/* =========================
-   TABLE
-========================= */
+/* TABLE */
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
@@ -248,9 +388,67 @@ tbody tr:hover {
     background: #f3e8ff;
 }
 
-/* =========================
-   PRINT
-========================= */
+.duplicate-row {
+    background: #ffe5e5 !important;
+}
+
+.duplicate-row td {
+    color: #b91c1c;
+    font-weight: 600;
+}
+
+/* PIVOT */
+
+.pivot-table th {
+    white-space: nowrap;
+}
+
+.pivot-row-label {
+    text-align: left !important;
+    font-weight: 700;
+}
+
+.pivot-total-column {
+    background: #ede9fe !important;
+    color: #5b21b6;
+    font-weight: 800;
+}
+
+.pivot-grand-total {
+    background: #ddd6fe !important;
+    color: #4c1d95;
+    font-weight: 800;
+}
+
+/* SOURCE FILE CELLS */
+
+.source-file-cell {
+    font-weight: 700;
+}
+
+.source-file-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+/* SUMMARY BOX */
+
+.summary-info {
+    background: #fff3cd;
+    border: 1px solid #ffe69c;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+}
+
+/* PRINT */
+
 @media print {
     body {
         background: #fff;
@@ -279,9 +477,8 @@ tbody tr:hover {
     }
 }
 
-/* =========================
-   RESPONSIVE
-========================= */
+/* RESPONSIVE */
+
 @media (max-width: 1400px) {
     .controls {
         grid-template-columns: repeat(3, 1fr);
@@ -295,24 +492,12 @@ tbody tr:hover {
 
     #yearFilter,
     #branchFilter,
-    #vehicleFilter {
+    #vehicleFilter,
+    #colourFilter {
         min-height: 140px;
     }
 }
-/* Form Group */
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
 
-/* Labels */
-.form-group label {
-    font-size: 13px;
-    font-weight: 600;
-    color: #6d28d9;
-    margin-left: 2px;
-}
 @media (max-width: 600px) {
     h1 {
         font-size: 28px;
@@ -334,13 +519,23 @@ tbody tr:hover {
 
     #yearFilter,
     #branchFilter,
-    #vehicleFilter {
+    #vehicleFilter,
+    #colourFilter {
         min-height: 120px;
     }
+
+    .upload-mode-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .upload-mode-row select {
+        width: 100%;
+    }
 }
-   /* =========================
-   THEME SELECTOR
-========================= */
+
+/* THEME BUTTONS */
+
 .theme-selector {
     display: flex;
     justify-content: center;
@@ -348,14 +543,7 @@ tbody tr:hover {
     margin-bottom: 20px;
     flex-wrap: wrap;
 }
-.duplicate-row {
-    background: #ffe5e5 !important;
-}
 
-.duplicate-row td {
-    color: #b91c1c;
-    font-weight: 600;
-}
 .theme-btn {
     width: 36px;
     height: 36px;
@@ -388,812 +576,3326 @@ tbody tr:hover {
 .theme-btn.yellow-black {
     background: linear-gradient(135deg, #facc15 50%, #111827 50%);
 }
+
+.hidden {
+    display: none !important;
+}
 </style>
 </head>
-<body>
-<div class="container">
-  <h1>Advanced Stock Summary Generator</h1>
 
-  <div class="panel">
-    <div id="dropZone" class="drop-zone">
-      Drag & Drop Excel File Here or Click to Select
-      <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
+<body>
+
+<div class="container">
+
+    <h1>Advanced Stock Summary Generator</h1>
+
+    <div class="panel">
+
+        <!-- UPLOAD MODE -->
+        <div class="upload-mode-row">
+            <label for="uploadMode">Excel Upload Mode</label>
+
+            <select id="uploadMode">
+                <option value="single">Single Excel File</option>
+                <option value="multiple">Multiple Excel Files</option>
+            </select>
+        </div>
+
+        <!-- DROP ZONE -->
+        <div id="dropZone" class="drop-zone">
+            <div id="dropZoneText">
+                Drag & Drop Excel File Here or Click to Select
+            </div>
+
+            <small>
+                Supports .xlsx and .xls files
+            </small>
+
+            <input
+                type="file"
+                id="fileInput"
+                accept=".xlsx,.xls"
+                hidden
+            >
+        </div>
+
+        <!-- FILE MANAGER -->
+        <div id="fileManager" class="file-manager hidden">
+
+            <strong>Uploaded Files</strong>
+
+            <div id="fileList" class="file-list"></div>
+
+            <div class="file-actions">
+                <button
+                    type="button"
+                    onclick="clearAllFiles()"
+                    class="secondary clear-files-btn"
+                >
+                    Clear All Files
+                </button>
+            </div>
+
+            <div id="fileLegend" class="file-legend"></div>
+
+        </div>
+
+        <div class="controls">
+
+            <!-- YEAR FILTER -->
+            <div class="form-group">
+                <label for="yearFilter">Year of Model</label>
+
+                <select
+                    id="yearFilter"
+                    multiple
+                    size="6"
+                ></select>
+            </div>
+
+            <!-- BRANCH FILTER -->
+            <div class="form-group">
+                <label for="branchFilter">
+                    Branch / Subdealer
+                </label>
+
+                <select
+                    id="branchFilter"
+                    multiple
+                    size="8"
+                ></select>
+            </div>
+
+            <!-- VEHICLE FILTER -->
+            <div class="form-group">
+                <label for="vehicleFilter">
+                    Vehicle Series
+                </label>
+
+                <select
+                    id="vehicleFilter"
+                    multiple
+                    size="8"
+                ></select>
+            </div>
+
+            <!-- COLOUR FILTER -->
+            <div class="form-group">
+                <label for="colourFilter">
+                    Colour
+                </label>
+
+                <select
+                    id="colourFilter"
+                    multiple
+                    size="8"
+                ></select>
+            </div>
+
+            <!-- UNIQUE CHASSIS -->
+            <div class="form-group">
+
+                <label>&nbsp;</label>
+
+                <button
+                    type="button"
+                    id="uniqueBtn"
+                    onclick="toggleUniqueMode()"
+                >
+                    Show Unique Chassis Only
+                </button>
+
+            </div>
+
+            <!-- REPORT TYPE -->
+            <div class="form-group">
+
+                <label for="reportType">
+                    Report Type
+                </label>
+
+                <select id="reportType">
+
+                    <option value="series" selected>
+                        Series Report
+                    </option>
+
+                    <option value="model">
+                        Separate Model Report
+                    </option>
+
+                    <option value="merged">
+                        Merged Table Report
+                    </option>
+
+                    <option value="pivot">
+                        Pivot Table
+                    </option>
+
+                </select>
+
+            </div>
+
+            <!-- PIVOT ROW FIELD -->
+            <div
+                class="form-group hidden"
+                id="pivotFieldGroup"
+            >
+
+                <label for="pivotRowField">
+                    Pivot Row Field
+                </label>
+
+                <select id="pivotRowField">
+
+                    <option value="subdealer">
+                        Subdealer
+                    </option>
+
+                    <option value="vehicle">
+                        Vehicle
+                    </option>
+
+                    <option value="model">
+                        Model
+                    </option>
+
+                    <option value="chassis">
+                        Chassis Number
+                    </option>
+
+                    <option value="engine">
+                        Engine Number
+                    </option>
+
+                    <option value="colour">
+                        Colour
+                    </option>
+
+                    <option value="year">
+                        Year Of Model
+                    </option>
+
+                </select>
+
+            </div>
+
+            <!-- CUSTOM TITLE -->
+            <div class="form-group">
+
+                <label for="customTitle">
+                    Custom Report Title
+                </label>
+
+                <input
+                    id="customTitle"
+                    type="text"
+                    placeholder="Optional custom title"
+                >
+
+            </div>
+
+            <!-- GENERATE -->
+            <div class="form-group">
+
+                <label>&nbsp;</label>
+
+                <button onclick="generateReports()">
+                    Generate Reports
+                </button>
+
+            </div>
+
+            <!-- JPG -->
+            <div class="form-group">
+
+                <label>&nbsp;</label>
+
+                <button onclick="downloadAllJPG()">
+                    Download JPG ZIP
+                </button>
+
+            </div>
+
+            <!-- EXCEL -->
+            <div class="form-group">
+
+                <label>&nbsp;</label>
+
+                <button onclick="downloadAllExcel()">
+                    Download Excel ZIP
+                </button>
+
+            </div>
+
+            <!-- PDF -->
+            <div class="form-group">
+
+                <label>&nbsp;</label>
+
+                <button onclick="downloadAllPDF()">
+                    Download PDF ZIP
+                </button>
+
+            </div>
+
+            <!-- PRINT -->
+            <div class="form-group">
+
+                <label>&nbsp;</label>
+
+                <button
+                    class="secondary"
+                    onclick="window.print()"
+                >
+                    Print
+                </button>
+
+            </div>
+
+        </div>
+
     </div>
 
-  <div class="controls">
+    <div id="output"></div>
 
-  <!-- Year Filter -->
-  <div class="form-group">
-    <label for="yearFilter">Year of Model</label>
-    <select id="yearFilter" multiple size="6"></select>
-  </div>
-
-  <!-- Branch Filter -->
-  <div class="form-group">
-    <label for="branchFilter">Branch / Subdealer</label>
-    <select id="branchFilter" multiple size="8"></select>
-  </div>
-
-  <!-- Vehicle Filter -->
-  <div class="form-group">
-    <label for="vehicleFilter">Vehicle Series</label>
-    <select id="vehicleFilter" multiple size="8"></select>
-  </div>
-<div class="form-group">
-  <label for="colourFilter">Colour</label>
-  <select id="colourFilter" multiple size="8"></select>
-</div>
-     <div class="form-group">
-  <label>&nbsp;</label>
-  <button type="button" id="uniqueBtn" onclick="toggleUniqueMode()">
-    Show Unique Chassis Only
-  </button>
-</div>
-  <!-- Report Type -->
-  <div class="form-group">
-    <label for="reportType">Report Type</label>
-    <select id="reportType">
-      <option value="series" selected>Series Report</option>
-      <option value="model">Separate Model Report</option>
-      <option value="merged">Merged Table Report</option>
-    </select>
-  </div>
-
-  <!-- Custom Title -->
-  <div class="form-group">
-    <label for="customTitle">Custom Report Title</label>
-    <input
-      id="customTitle"
-      type="text"
-      placeholder="Optional custom title"
-    >
-  </div>
-
-  <!-- Action Buttons -->
-  <div class="form-group">
-    <label>&nbsp;</label>
-    <button onclick="generateReports()">Generate Reports</button>
-  </div>
-
-  <div class="form-group">
-    <label>&nbsp;</label>
-    <button onclick="downloadAllJPG()">Download JPG ZIP</button>
-  </div>
-
-  <div class="form-group">
-    <label>&nbsp;</label>
-    <button onclick="downloadAllExcel()">Download Excel ZIP</button>
-  </div>
-
-  <div class="form-group">
-    <label>&nbsp;</label>
-    <button onclick="downloadAllPDF()">Download PDF ZIP</button>
-  </div>
-
-  <div class="form-group">
-    <label>&nbsp;</label>
-    <button class="secondary" onclick="window.print()">Print</button>
-  </div>
-
-</div>
-
-  <div id="output"></div>
 </div>
 
 <script>
-   let uniqueChassisMode = false;
+
+/* =========================================================
+   GLOBAL VARIABLES
+========================================================= */
+
+let uniqueChassisMode = false;
+
 let rawRows = [];
+
 let groupedData = {};
 
+let uploadedFiles = [];
+
+let sourceFileColors = {};
+
+let pivotData = null;
+
+let currentReportType = '';
+
+let fileCounter = 0;
+
+
+/* =========================================================
+   FILE COLORS
+========================================================= */
+
+const FILE_COLORS = [
+    {
+        background: '#dbeafe',
+        border: '#60a5fa',
+        text: '#1e3a8a'
+    },
+    {
+        background: '#dcfce7',
+        border: '#4ade80',
+        text: '#166534'
+    },
+    {
+        background: '#fef3c7',
+        border: '#fbbf24',
+        text: '#92400e'
+    },
+    {
+        background: '#fce7f3',
+        border: '#f472b6',
+        text: '#9d174d'
+    },
+    {
+        background: '#e0e7ff',
+        border: '#818cf8',
+        text: '#3730a3'
+    },
+    {
+        background: '#cffafe',
+        border: '#22d3ee',
+        text: '#155e75'
+    },
+    {
+        background: '#f3e8ff',
+        border: '#c084fc',
+        text: '#6b21a8'
+    },
+    {
+        background: '#ffedd5',
+        border: '#fb923c',
+        text: '#9a3412'
+    }
+];
+
+
+/* =========================================================
+   DOM ELEMENTS
+========================================================= */
+
 const fileInput = document.getElementById('fileInput');
+
 const dropZone = document.getElementById('dropZone');
+
 const output = document.getElementById('output');
-function toggleUniqueMode() {
 
-  uniqueChassisMode = !uniqueChassisMode;
-
-  document.getElementById('uniqueBtn').textContent =
-    uniqueChassisMode
-      ? 'Showing Unique Chassis Only'
-      : 'Show Unique Chassis Only';
-
-  generateReports();
-}
-// Show selected file name
-function showFileName(name) {
-  dropZone.innerHTML = `
-    <strong>Selected File:</strong><br>
-    ${name}
-    <br><br>
-    <small>Click or drop another file to replace it.</small>
-    <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
-  `;
-  document.getElementById('fileInput').addEventListener('change', e => {
-    if (e.target.files[0]) handleFile(e.target.files[0]);
-  });
-}
-
-dropZone.addEventListener('click', () => fileInput.click());
-
-dropZone.addEventListener('dragover', e => {
-  e.preventDefault();
-  dropZone.classList.add('dragover');
-});
-
-dropZone.addEventListener('dragleave', () => {
-  dropZone.classList.remove('dragover');
-});
-
-dropZone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropZone.classList.remove('dragover');
-  const file = e.dataTransfer.files[0];
-  if (file) handleFile(file);
-});
-
-fileInput.addEventListener('change', e => {
-  const file = e.target.files[0];
-  if (file) handleFile(file);
-});
-function getYearFromChassis(chassis) {
-  if (!chassis || chassis.length < 10) return '';
-
-  // 10th character of VIN/Chassis Number
-  const code = chassis.charAt(9).toUpperCase();
-
-  const yearMap = {
-    A: '2010',
-    B: '2011',
-    C: '2012',
-    D: '2013',
-    E: '2014',
-    F: '2015',
-    G: '2016',
-    H: '2017',
-    J: '2018',
-    K: '2019',
-    L: '2020',
-    M: '2021',
-    N: '2022',
-    P: '2023',
-    R: '2024',
-    S: '2025',
-    T: '2026',
-    V: '2027',
-    W: '2028',
-    X: '2029',
-    Y: '2030'
-  };
-
-  return yearMap[code] || '';
-}
-
-function excelDateToYear(value) {
-  if (!value) return '';
-
-  if (typeof value === 'number') {
-    const d = XLSX.SSF.parse_date_code(value);
-    return d ? String(d.y) : '';
-  }
-
-  const text = String(value).trim();
-
-  // Direct year like 2025
-  if (/^\d{4}$/.test(text)) {
-    return text;
-  }
-
-  const dt = new Date(text);
-  return isNaN(dt) ? '' : String(dt.getFullYear());
-}
-
-function normalizeRow(r) {
-  const chassis = (r['Chassis Number'] || '').trim();
-
-  return {
-    subdealer: r.Subdealer || '',
-    vehicle: r.Vehicle || '',
-    model: extractModel(r.Vehicle || ''),
-    chassis: chassis,
-    engine: r['Engine Number'] || '',
-    colour: r.Colour || '',
-    year: getYearFromChassis(chassis)
-  };
-}
-
-
-// Extract model name
-
-function extractModel(vehicle) {
-  const v = (vehicle || '').toUpperCase();
-
-  const seriesMap = {
-    'JUPITER': ['JUPITER'],
-    'NTORQ': ['NTORQ'],
-    'ZEST': ['ZEST'],
-    'RAIDER': ['RAIDER'],
-    'IQUBE': [
-  'IQUBE',
-  'I QUBE',
-  'IQUIBE',
-  'I QUIBE'
-],
-    'XL100': ['XL100', 'XL 100'],
-    'APACHE': ['APACHE', 'RTR', 'RR 310'],
-    'RADEON': ['RADEON'],
-    'RONIN': ['RONIN'],
-    'SPORT': ['SPORT'],
-    'STAR CITY+': ['STAR CITY+', 'STAR CITY'],
-    'ORBITER': ['ORBITER'],
-    'XL SUPER': ['XL SUPER']
-  };
-
-  for (const [series, keywords] of Object.entries(seriesMap)) {
-    for (const keyword of keywords) {
-      if (v.includes(keyword)) {
-        return series;
-      }
-    }
-  }
-
-  // Fallback: first three words
-  return v.split(/\s+/).slice(0, 3).join(' ');
-}
-// Handle uploaded file
-function handleFile(file) {
-  if (!file) return;
-
-  showFileName(file.name);
-
-  const reader = new FileReader();
-
-  reader.onload = function(e) {
-    try {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
-
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-
-      let rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-
-      // If Vehicle column missing, try starting from row 4
-      if (!rows.length || !('Vehicle' in rows[0])) {
-        rows = XLSX.utils.sheet_to_json(sheet, {
-          range: 3,
-          defval: ''
-        });
-      }
-
-      rawRows = rows
-        .map(normalizeRow)
-        .filter(r => r.vehicle && r.chassis);
-
-      if (rawRows.length === 0) {
-        alert('No valid stock records found in the Excel file.');
-        return;
-      }
-
-      populateFilters();
-      generateReports();
-
-      alert(`${rawRows.length} records loaded successfully.`);
-    } catch (err) {
-      console.error(err);
-      alert('Error reading Excel file.');
-    }
-  };
-
-  reader.readAsArrayBuffer(file);
-}
-function populateFilters() {
-  const yearFilter = document.getElementById('yearFilter');
-  const branchFilter = document.getElementById('branchFilter');
-  const vehicleFilter = document.getElementById('vehicleFilter');
-  const colourFilter = document.getElementById('colourFilter');
-
-  const years = [...new Set(rawRows.map(r => r.year))]
-    .filter(Boolean)
-    .sort();
-
-  const branches = [...new Set(rawRows.map(r => r.subdealer))]
-    .filter(Boolean)
-    .sort();
-
-  const vehicles = [...new Set(rawRows.map(r => r.model))]
-    .filter(Boolean)
-    .sort();
-
-  const colours = [...new Set(rawRows.map(r => r.colour))]
-    .filter(Boolean)
-    .sort();
-
-  yearFilter.innerHTML = '';
-  branchFilter.innerHTML = '';
-  vehicleFilter.innerHTML = '';
-  colourFilter.innerHTML = '';
-
-  years.forEach(y => {
-    yearFilter.innerHTML += `<option value="${y}">${y}</option>`;
-  });
-
-  branches.forEach(b => {
-    branchFilter.innerHTML += `<option value="${b}">${b}</option>`;
-  });
-
-  vehicles.forEach(v => {
-    vehicleFilter.innerHTML += `<option value="${v}">${v}</option>`;
-  });
-
-  colours.forEach(c => {
-    colourFilter.innerHTML += `<option value="${c}">${c}</option>`;
-  });
-}
-
-// Generate reports
-async function downloadAllJPG() {
-  if (Object.keys(groupedData).length === 0) {
-    alert('No reports generated.');
-    return;
-  }
-
-  const zip = new JSZip();
-  const sections = document.querySelectorAll('.summary-sheet');
-
-  for (const section of sections) {
-    const title = section.querySelector('.title')
-      .textContent
-      .replace(/[\\/:*?"<>|]/g, '_');
-
-    const canvas = await html2canvas(section, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff'
-    });
-
-    const blob = await new Promise(resolve =>
-      canvas.toBlob(resolve, 'image/jpeg', 0.95)
-    );
-
-    zip.file(`${title}.jpg`, blob);
-  }
-
-  const zipBlob = await zip.generateAsync({ type: 'blob' });
-  saveBlob(zipBlob, 'Stock_Summaries_JPG.zip');
-}
-function generateReports() {
-
-if (rawRows.length === 0) {
-alert('Please upload a file first.');
-return;
-}
-
-// FILTER VALUES
-const selectedYears = Array.from(
-document.getElementById('yearFilter').selectedOptions
-).map(option => option.value);
-
-const selectedColours = Array.from(
-document.getElementById('colourFilter').selectedOptions
-).map(option => option.value);
-
-const selectedBranches = Array.from(
-document.getElementById('branchFilter').selectedOptions
-).map(option => option.value);
-
-const selectedVehicles = Array.from(
-document.getElementById('vehicleFilter').selectedOptions
-).map(option => option.value);
-
-const customTitle =
-document.getElementById('customTitle').value.trim();
+const uploadMode =
+    document.getElementById('uploadMode');
 
 const reportType =
-document.getElementById('reportType').value;
+    document.getElementById('reportType');
 
-// APPLY FILTERS
-let rows = rawRows.filter(r =>
-(
-selectedYears.length === 0 ||
-selectedYears.includes(r.year)
-) &&
-(
-selectedBranches.length === 0 ||
-selectedBranches.includes(r.subdealer)
-) &&
-(
-selectedVehicles.length === 0 ||
-selectedVehicles.includes(r.model)
-) &&
-(
-selectedColours.length === 0 ||
-selectedColours.includes(r.colour)
-)
+const pivotFieldGroup =
+    document.getElementById('pivotFieldGroup');
+
+const pivotRowField =
+    document.getElementById('pivotRowField');
+
+
+/* =========================================================
+   UPLOAD MODE
+========================================================= */
+
+uploadMode.addEventListener('change', () => {
+
+    const multiple =
+        uploadMode.value === 'multiple';
+
+    fileInput.multiple = multiple;
+
+    uploadedFiles = [];
+    rawRows = [];
+    groupedData = {};
+    pivotData = null;
+
+    renderFileList();
+
+    resetFilters();
+
+    output.innerHTML = '';
+
+    updateDropZoneText();
+
+});
+
+
+function updateDropZoneText() {
+
+    if (uploadMode.value === 'multiple') {
+
+        document.getElementById('dropZoneText').textContent =
+            'Drag & Drop Multiple Excel Files Here or Click to Select';
+
+    } else {
+
+        document.getElementById('dropZoneText').textContent =
+            'Drag & Drop Excel File Here or Click to Select';
+
+    }
+
+}
+
+
+/* =========================================================
+   REPORT TYPE
+========================================================= */
+
+reportType.addEventListener('change', () => {
+
+    const isPivot =
+        reportType.value === 'pivot';
+
+    pivotFieldGroup.classList.toggle(
+        'hidden',
+        !isPivot
+    );
+
+    if (rawRows.length > 0) {
+        generateReports();
+    }
+
+});
+
+
+pivotRowField.addEventListener('change', () => {
+
+    if (
+        reportType.value === 'pivot' &&
+        rawRows.length > 0
+    ) {
+        generateReports();
+    }
+
+});
+
+
+/* =========================================================
+   UNIQUE CHASSIS
+========================================================= */
+
+function toggleUniqueMode() {
+
+    uniqueChassisMode =
+        !uniqueChassisMode;
+
+    document.getElementById('uniqueBtn').textContent =
+        uniqueChassisMode
+            ? 'Showing Unique Chassis Only'
+            : 'Show Unique Chassis Only';
+
+    generateReports();
+
+}
+
+
+/* =========================================================
+   DROP ZONE EVENTS
+========================================================= */
+
+dropZone.addEventListener(
+    'click',
+    () => fileInput.click()
 );
 
-if (rows.length === 0) {
-output.innerHTML =
-'<p style="text-align:center;font-weight:bold;">No records found.</p>';
-groupedData = {};
-return;
+
+dropZone.addEventListener(
+    'dragover',
+    e => {
+
+        e.preventDefault();
+
+        dropZone.classList.add('dragover');
+
+    }
+);
+
+
+dropZone.addEventListener(
+    'dragleave',
+    () => {
+
+        dropZone.classList.remove(
+            'dragover'
+        );
+
+    }
+);
+
+
+dropZone.addEventListener(
+    'drop',
+    e => {
+
+        e.preventDefault();
+
+        dropZone.classList.remove(
+            'dragover'
+        );
+
+        const files =
+            Array.from(e.dataTransfer.files);
+
+        handleSelectedFiles(files);
+
+    }
+);
+
+
+fileInput.addEventListener(
+    'change',
+    e => {
+
+        const files =
+            Array.from(e.target.files);
+
+        handleSelectedFiles(files);
+
+        /*
+         * Reset input so selecting
+         * the same file again works.
+         */
+        e.target.value = '';
+
+    }
+);
+
+
+/* =========================================================
+   HANDLE SELECTED FILES
+========================================================= */
+
+function handleSelectedFiles(files) {
+
+    if (!files || files.length === 0) {
+        return;
+    }
+
+    const excelFiles =
+        files.filter(file =>
+            /\.(xlsx|xls)$/i.test(file.name)
+        );
+
+    if (excelFiles.length === 0) {
+
+        alert(
+            'Please select valid Excel files (.xlsx or .xls).'
+        );
+
+        return;
+    }
+
+    if (uploadMode.value === 'single') {
+
+        uploadedFiles = [];
+
+        const file =
+            excelFiles[0];
+
+        processSingleFile(file);
+
+    } else {
+
+        excelFiles.forEach(file => {
+
+            const exists =
+                uploadedFiles.some(
+                    item =>
+                        item.file.name === file.name &&
+                        item.file.size === file.size
+                );
+
+            if (!exists) {
+                processSingleFile(file);
+            }
+
+        });
+
+    }
+
 }
 
-// DUPLICATE COUNT
-const chassisCount = {};
 
-rows.forEach(r => {
-const chassis = String(r.chassis || '')
-.trim()
-.toUpperCase();
+/* =========================================================
+   PROCESS ONE FILE
+========================================================= */
 
+function processSingleFile(file) {
 
-if (!chassis) return;
+    const id =
+        `file_${++fileCounter}_${Date.now()}`;
 
-chassisCount[chassis] =
-  (chassisCount[chassis] || 0) + 1;
+    const colorIndex =
+        uploadedFiles.length %
+        FILE_COLORS.length;
 
+    const fileRecord = {
 
-});
+        id,
 
-const duplicateCount =
-Object.values(chassisCount)
-.filter(count => count > 1)
-.length;
+        file,
 
-// UNIQUE CHASSIS MODE
-if (uniqueChassisMode) {
+        rows: [],
 
+        colorIndex
 
-const seen = new Set();
+    };
 
-rows = rows.filter(r => {
+    uploadedFiles.push(fileRecord);
 
-  const chassis = String(r.chassis || '')
-    .trim()
-    .toUpperCase();
+    sourceFileColors[file.name] =
+        FILE_COLORS[colorIndex];
 
-  if (!chassis) return true;
+    renderFileList();
 
-  if (seen.has(chassis)) {
-    return false;
-  }
-
-  seen.add(chassis);
-  return true;
-});
-
+    readExcelFile(file, fileRecord);
 
 }
 
-// SUMMARY
-output.innerHTML = `     <div style="
-      background:#fff3cd;
-      border:1px solid #ffe69c;
-      padding:15px;
-      margin-bottom:20px;
-      border-radius:10px;
-      font-size:16px;
-      font-weight:bold;
-      text-align:center;
-    ">
-      🚨 Duplicate Chassis Found Across Filtered Stock: ${duplicateCount}       <br>
-      Total Records Displayed: ${rows.length}
-      ${uniqueChassisMode ? '<br>Unique Chassis Mode Enabled' : ''}     </div>
-  `;
 
-// GROUP DATA
-groupedData = {};
+/* =========================================================
+   READ EXCEL FILE
+========================================================= */
 
-if (reportType === 'merged') {
+function readExcelFile(file, fileRecord) {
 
+    const reader =
+        new FileReader();
 
-groupedData['ALL STOCK'] = rows;
+    reader.onload = function(e) {
 
+        try {
 
-} else if (reportType === 'series') {
+            const data =
+                new Uint8Array(
+                    e.target.result
+                );
 
+            const workbook =
+                XLSX.read(
+                    data,
+                    {
+                        type: 'array'
+                    }
+                );
 
-rows.forEach(r => {
+            if (
+                !workbook.SheetNames ||
+                workbook.SheetNames.length === 0
+            ) {
 
-  const key = `${r.model}|${r.year}`;
+                throw new Error(
+                    'No worksheet found.'
+                );
 
-  if (!groupedData[key]) {
-    groupedData[key] = [];
-  }
+            }
 
-  groupedData[key].push(r);
+            const sheet =
+                workbook.Sheets[
+                    workbook.SheetNames[0]
+                ];
 
-});
+            let rows =
+                XLSX.utils.sheet_to_json(
+                    sheet,
+                    {
+                        defval: ''
+                    }
+                );
 
+            /*
+             * If Vehicle column is missing,
+             * try from row 4.
+             */
+            if (
+                !rows.length ||
+                !Object.prototype.hasOwnProperty.call(
+                    rows[0],
+                    'Vehicle'
+                )
+            ) {
 
-} else if (reportType === 'model') {
+                rows =
+                    XLSX.utils.sheet_to_json(
+                        sheet,
+                        {
+                            range: 3,
+                            defval: ''
+                        }
+                    );
 
+            }
 
-rows.forEach(r => {
+            const normalizedRows =
+                rows
+                    .map(row =>
+                        normalizeRow(
+                            row,
+                            file.name
+                        )
+                    )
+                    .filter(
+                        row =>
+                            row.vehicle &&
+                            row.chassis
+                    );
 
-  const key = `${r.vehicle}|${r.year}`;
+            fileRecord.rows =
+                normalizedRows;
 
-  if (!groupedData[key]) {
-    groupedData[key] = [];
-  }
+            processAllUploadedFiles();
 
-  groupedData[key].push(r);
+        } catch (err) {
 
-});
+            console.error(err);
 
+            uploadedFiles =
+                uploadedFiles.filter(
+                    item =>
+                        item.id !== fileRecord.id
+                );
+
+            renderFileList();
+
+            alert(
+                `Error reading "${file.name}".`
+            );
+
+        }
+
+    };
+
+    reader.readAsArrayBuffer(file);
 
 }
 
-// CREATE TABLES
-Object.keys(groupedData)
-.sort()
-.forEach(key => {
+
+/* =========================================================
+   PROCESS ALL FILES
+========================================================= */
+
+function processAllUploadedFiles() {
+
+    rawRows =
+        uploadedFiles.flatMap(
+            item => item.rows
+        );
+
+    if (rawRows.length === 0) {
+
+        output.innerHTML = '';
+
+        return;
+
+    }
+
+    populateFilters();
+
+    renderFileList();
+
+    generateReports();
+
+}
 
 
-  let title;
+/* =========================================================
+   NORMALIZE ROW
+========================================================= */
 
-  if (key === 'ALL STOCK') {
-
-    title =
-      customTitle ||
-      'ALL STOCK SUMMARY';
-
-  } else {
-
-    const parts = key.split('|');
-
-    const model = parts[0];
-    const yr = parts[1] || '';
-
-    title =
-      customTitle ||
-      `${model} ${yr} MODEL STOCK`;
-  }
-
-  const section =
-    document.createElement('div');
-
-  section.className =
-    'summary-sheet';
-
-  let html = `
-    <div class="title">${title}</div>
-    <table>
-      <thead>
-        <tr>
-          <th>SNo</th>
-          <th>Subdealer</th>
-          <th>Vehicle</th>
-          <th>Chassis Number</th>
-          <th>Engine Number</th>
-          <th>Colour</th>
-          <th>Year Of Model</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
-
-  groupedData[key].forEach((r, i) => {
+function normalizeRow(
+    r,
+    sourceFile = ''
+) {
 
     const chassis =
-      String(r.chassis || '')
-        .trim()
-        .toUpperCase();
+        String(
+            r['Chassis Number'] || ''
+        ).trim();
 
-    const isDuplicate =
-      chassisCount[chassis] > 1;
+    return {
+
+        subdealer:
+            String(
+                r.Subdealer || ''
+            ).trim(),
+
+        vehicle:
+            String(
+                r.Vehicle || ''
+            ).trim(),
+
+        model:
+            extractModel(
+                r.Vehicle || ''
+            ),
+
+        chassis,
+
+        engine:
+            String(
+                r['Engine Number'] || ''
+            ).trim(),
+
+        colour:
+            String(
+                r.Colour || ''
+            ).trim(),
+
+        year:
+            getYearFromChassis(
+                chassis
+            ),
+
+        sourceFile
+
+    };
+
+}
+
+
+/* =========================================================
+   VIN YEAR
+========================================================= */
+
+function getYearFromChassis(chassis) {
+
+    if (
+        !chassis ||
+        chassis.length < 10
+    ) {
+        return '';
+    }
+
+    const code =
+        chassis
+            .charAt(9)
+            .toUpperCase();
+
+    const yearMap = {
+
+        A: '2010',
+        B: '2011',
+        C: '2012',
+        D: '2013',
+        E: '2014',
+        F: '2015',
+        G: '2016',
+        H: '2017',
+        J: '2018',
+        K: '2019',
+        L: '2020',
+        M: '2021',
+        N: '2022',
+        P: '2023',
+        R: '2024',
+        S: '2025',
+        T: '2026',
+        V: '2027',
+        W: '2028',
+        X: '2029',
+        Y: '2030'
+
+    };
+
+    return yearMap[code] || '';
+
+}
+
+
+/* =========================================================
+   EXCEL DATE
+========================================================= */
+
+function excelDateToYear(value) {
+
+    if (!value) {
+        return '';
+    }
+
+    if (typeof value === 'number') {
+
+        const d =
+            XLSX.SSF.parse_date_code(
+                value
+            );
+
+        return d
+            ? String(d.y)
+            : '';
+
+    }
+
+    const text =
+        String(value).trim();
+
+    if (
+        /^\d{4}$/.test(text)
+    ) {
+
+        return text;
+
+    }
+
+    const dt =
+        new Date(text);
+
+    return isNaN(dt)
+        ? ''
+        : String(
+            dt.getFullYear()
+        );
+
+}
+
+
+/* =========================================================
+   MODEL EXTRACTION
+========================================================= */
+
+function extractModel(vehicle) {
+
+    const v =
+        String(vehicle || '')
+            .toUpperCase();
+
+    const seriesMap = {
+
+        JUPITER: [
+            'JUPITER'
+        ],
+
+        NTORQ: [
+            'NTORQ'
+        ],
+
+        ZEST: [
+            'ZEST'
+        ],
+
+        RAIDER: [
+            'RAIDER'
+        ],
+
+        IQUBE: [
+            'IQUBE',
+            'I QUBE',
+            'IQUIBE',
+            'I QUIBE'
+        ],
+
+        XL100: [
+            'XL100',
+            'XL 100'
+        ],
+
+        APACHE: [
+            'APACHE',
+            'RTR',
+            'RR 310'
+        ],
+
+        RADEON: [
+            'RADEON'
+        ],
+
+        RONIN: [
+            'RONIN'
+        ],
+
+        SPORT: [
+            'SPORT'
+        ],
+
+        'STAR CITY+': [
+            'STAR CITY+',
+            'STAR CITY'
+        ],
+
+        ORBITER: [
+            'ORBITER'
+        ],
+
+        'XL SUPER': [
+            'XL SUPER'
+        ]
+
+    };
+
+    for (
+        const [
+            series,
+            keywords
+        ]
+        of Object.entries(seriesMap)
+    ) {
+
+        for (
+            const keyword
+            of keywords
+        ) {
+
+            if (
+                v.includes(keyword)
+            ) {
+
+                return series;
+
+            }
+
+        }
+
+    }
+
+    return v
+        .split(/\s+/)
+        .slice(0, 3)
+        .join(' ');
+
+}
+
+
+/* =========================================================
+   POPULATE FILTERS
+========================================================= */
+
+function populateFilters() {
+
+    const yearFilter =
+        document.getElementById(
+            'yearFilter'
+        );
+
+    const branchFilter =
+        document.getElementById(
+            'branchFilter'
+        );
+
+    const vehicleFilter =
+        document.getElementById(
+            'vehicleFilter'
+        );
+
+    const colourFilter =
+        document.getElementById(
+            'colourFilter'
+        );
+
+    const years =
+        [
+            ...new Set(
+                rawRows.map(
+                    r => r.year
+                )
+            )
+        ]
+            .filter(Boolean)
+            .sort();
+
+    const branches =
+        [
+            ...new Set(
+                rawRows.map(
+                    r => r.subdealer
+                )
+            )
+        ]
+            .filter(Boolean)
+            .sort();
+
+    const vehicles =
+        [
+            ...new Set(
+                rawRows.map(
+                    r => r.model
+                )
+            )
+        ]
+            .filter(Boolean)
+            .sort();
+
+    const colours =
+        [
+            ...new Set(
+                rawRows.map(
+                    r => r.colour
+                )
+            )
+        ]
+            .filter(Boolean)
+            .sort();
+
+    yearFilter.innerHTML = '';
+
+    branchFilter.innerHTML = '';
+
+    vehicleFilter.innerHTML = '';
+
+    colourFilter.innerHTML = '';
+
+    years.forEach(
+        y => {
+
+            yearFilter.innerHTML +=
+                `<option value="${escapeHtml(y)}">${escapeHtml(y)}</option>`;
+
+        }
+    );
+
+    branches.forEach(
+        b => {
+
+            branchFilter.innerHTML +=
+                `<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`;
+
+        }
+    );
+
+    vehicles.forEach(
+        v => {
+
+            vehicleFilter.innerHTML +=
+                `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`;
+
+        }
+    );
+
+    colours.forEach(
+        c => {
+
+            colourFilter.innerHTML +=
+                `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`;
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   FILTER VALUES
+========================================================= */
+
+function getSelectedValues(id) {
+
+    return Array.from(
+        document.getElementById(id)
+            .selectedOptions
+    ).map(
+        option =>
+            option.value
+    );
+
+}
+
+
+/* =========================================================
+   GET FILTERED ROWS
+========================================================= */
+
+function getFilteredRows() {
+
+    const selectedYears =
+        getSelectedValues(
+            'yearFilter'
+        );
+
+    const selectedColours =
+        getSelectedValues(
+            'colourFilter'
+        );
+
+    const selectedBranches =
+        getSelectedValues(
+            'branchFilter'
+        );
+
+    const selectedVehicles =
+        getSelectedValues(
+            'vehicleFilter'
+        );
+
+    let rows =
+        rawRows.filter(
+            r =>
+
+            (
+                selectedYears.length === 0 ||
+                selectedYears.includes(
+                    r.year
+                )
+            )
+
+            &&
+
+            (
+                selectedBranches.length === 0 ||
+                selectedBranches.includes(
+                    r.subdealer
+                )
+            )
+
+            &&
+
+            (
+                selectedVehicles.length === 0 ||
+                selectedVehicles.includes(
+                    r.model
+                )
+            )
+
+            &&
+
+            (
+                selectedColours.length === 0 ||
+                selectedColours.includes(
+                    r.colour
+                )
+            )
+        );
+
+    return rows;
+
+}
+
+
+/* =========================================================
+   SOURCE COLOR
+========================================================= */
+
+function getSourceColor(sourceFile) {
+
+    return (
+        sourceFileColors[sourceFile] ||
+        FILE_COLORS[0]
+    );
+
+}
+
+
+/* =========================================================
+   FILE LIST
+========================================================= */
+
+function renderFileList() {
+
+    const manager =
+        document.getElementById(
+            'fileManager'
+        );
+
+    const list =
+        document.getElementById(
+            'fileList'
+        );
+
+    const legend =
+        document.getElementById(
+            'fileLegend'
+        );
+
+    if (
+        uploadedFiles.length === 0
+    ) {
+
+        manager.classList.add(
+            'hidden'
+        );
+
+        list.innerHTML = '';
+
+        legend.innerHTML = '';
+
+        return;
+
+    }
+
+    manager.classList.remove(
+        'hidden'
+    );
+
+    list.innerHTML = '';
+
+    uploadedFiles.forEach(
+        fileRecord => {
+
+            const color =
+                FILE_COLORS[
+                    fileRecord.colorIndex
+                ];
+
+            const div =
+                document.createElement(
+                    'div'
+                );
+
+            div.className =
+                'file-item';
+
+            div.innerHTML = `
+
+                <div class="file-item-left">
+
+                    <span
+                        class="file-color-dot"
+                        style="
+                            background:${color.background};
+                            border-color:${color.border};
+                        "
+                    ></span>
+
+                    <div class="file-name">
+                        ${escapeHtml(fileRecord.file.name)}
+
+                        <span class="file-count">
+                            (${fileRecord.rows.length} records)
+                        </span>
+                    </div>
+
+                </div>
+
+                <button
+                    type="button"
+                    class="file-remove"
+                    onclick="removeUploadedFile('${fileRecord.id}')"
+                >
+                    Remove
+                </button>
+
+            `;
+
+            list.appendChild(div);
+
+        }
+    );
+
+    renderFileLegend();
+
+}
+
+
+/* =========================================================
+   FILE LEGEND
+========================================================= */
+
+function renderFileLegend() {
+
+    const legend =
+        document.getElementById(
+            'fileLegend'
+        );
+
+    legend.innerHTML = '';
+
+    uploadedFiles.forEach(
+        fileRecord => {
+
+            const color =
+                FILE_COLORS[
+                    fileRecord.colorIndex
+                ];
+
+            const div =
+                document.createElement(
+                    'div'
+                );
+
+            div.className =
+                'legend-item';
+
+            div.innerHTML = `
+
+                <span
+                    class="file-color-dot"
+                    style="
+                        background:${color.background};
+                        border-color:${color.border};
+                    "
+                ></span>
+
+                ${escapeHtml(fileRecord.file.name)}
+
+            `;
+
+            legend.appendChild(div);
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   REMOVE FILE
+========================================================= */
+
+function removeUploadedFile(id) {
+
+    uploadedFiles =
+        uploadedFiles.filter(
+            fileRecord =>
+                fileRecord.id !== id
+        );
+
+    rawRows =
+        uploadedFiles.flatMap(
+            item => item.rows
+        );
+
+    renderFileList();
+
+    if (
+        rawRows.length === 0
+    ) {
+
+        resetFilters();
+
+        output.innerHTML = '';
+
+        groupedData = {};
+
+        pivotData = null;
+
+        return;
+
+    }
+
+    populateFilters();
+
+    generateReports();
+
+}
+
+
+/* =========================================================
+   CLEAR ALL
+========================================================= */
+
+function clearAllFiles() {
+
+    uploadedFiles = [];
+
+    rawRows = [];
+
+    groupedData = {};
+
+    pivotData = null;
+
+    sourceFileColors = {};
+
+    resetFilters();
+
+    renderFileList();
+
+    output.innerHTML = '';
+
+}
+
+
+/* =========================================================
+   RESET FILTERS
+========================================================= */
+
+function resetFilters() {
+
+    [
+        'yearFilter',
+        'branchFilter',
+        'vehicleFilter',
+        'colourFilter'
+    ].forEach(
+        id => {
+
+            const select =
+                document.getElementById(id);
+
+            if (select) {
+                select.innerHTML = '';
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   DUPLICATE COUNT
+========================================================= */
+
+function getDuplicateData(rows) {
+
+    const chassisCount = {};
+
+    rows.forEach(
+        r => {
+
+            const chassis =
+                String(
+                    r.chassis || ''
+                )
+                    .trim()
+                    .toUpperCase();
+
+            if (!chassis) {
+                return;
+            }
+
+            chassisCount[chassis] =
+                (
+                    chassisCount[chassis] ||
+                    0
+                ) + 1;
+
+        }
+    );
+
+    const duplicateCount =
+        Object.values(
+            chassisCount
+        )
+            .filter(
+                count =>
+                    count > 1
+            )
+            .length;
+
+    return {
+        chassisCount,
+        duplicateCount
+    };
+
+}
+
+
+/* =========================================================
+   GENERATE REPORTS
+========================================================= */
+
+function generateReports() {
+
+    if (
+        rawRows.length === 0
+    ) {
+
+        if (
+            uploadedFiles.length === 0
+        ) {
+
+            alert(
+                'Please upload a file first.'
+            );
+
+        }
+
+        return;
+
+    }
+
+    const customTitle =
+        document.getElementById(
+            'customTitle'
+        ).value.trim();
+
+    const selectedReportType =
+        reportType.value;
+
+    currentReportType =
+        selectedReportType;
+
+    let rows =
+        getFilteredRows();
+
+    if (
+        rows.length === 0
+    ) {
+
+        output.innerHTML =
+            `
+            <p
+                style="
+                    text-align:center;
+                    font-weight:bold;
+                "
+            >
+                No records found.
+            </p>
+            `;
+
+        groupedData = {};
+
+        pivotData = null;
+
+        return;
+
+    }
+
+    /*
+     * Duplicate count is calculated
+     * BEFORE unique filtering.
+     */
+    const duplicateInfo =
+        getDuplicateData(rows);
+
+    const duplicateCount =
+        duplicateInfo.duplicateCount;
+
+    const chassisCount =
+        duplicateInfo.chassisCount;
+
+    /*
+     * UNIQUE CHASSIS MODE
+     */
+    if (
+        uniqueChassisMode
+    ) {
+
+        const seen =
+            new Set();
+
+        rows =
+            rows.filter(
+                r => {
+
+                    const chassis =
+                        String(
+                            r.chassis || ''
+                        )
+                            .trim()
+                            .toUpperCase();
+
+                    if (!chassis) {
+                        return true;
+                    }
+
+                    if (
+                        seen.has(
+                            chassis
+                        )
+                    ) {
+                        return false;
+                    }
+
+                    seen.add(
+                        chassis
+                    );
+
+                    return true;
+
+                }
+            );
+
+    }
+
+    /*
+     * SUMMARY
+     */
+    output.innerHTML = `
+
+        <div class="summary-info">
+
+            🚨 Duplicate Chassis Found Across Filtered Stock:
+            ${duplicateCount}
+
+            <br>
+
+            Total Records Displayed:
+            ${rows.length}
+
+            ${
+                uniqueChassisMode
+                    ? '<br>Unique Chassis Mode Enabled'
+                    : ''
+            }
+
+        </div>
+
+    `;
+
+    /*
+     * PIVOT REPORT
+     */
+    if (
+        selectedReportType === 'pivot'
+    ) {
+
+        groupedData = {};
+
+        generatePivotReport(
+            rows,
+            customTitle
+        );
+
+        return;
+
+    }
+
+    /*
+     * NORMAL REPORTS
+     */
+
+    pivotData = null;
+
+    groupedData = {};
+
+    if (
+        selectedReportType === 'merged'
+    ) {
+
+        groupedData[
+            'ALL STOCK'
+        ] = rows;
+
+    }
+
+    else if (
+        selectedReportType === 'series'
+    ) {
+
+        rows.forEach(
+            r => {
+
+                const key =
+                    `${r.model}|${r.year}`;
+
+                if (
+                    !groupedData[key]
+                ) {
+
+                    groupedData[key] = [];
+
+                }
+
+                groupedData[key].push(r);
+
+            }
+        );
+
+    }
+
+    else if (
+        selectedReportType === 'model'
+    ) {
+
+        rows.forEach(
+            r => {
+
+                const key =
+                    `${r.vehicle}|${r.year}`;
+
+                if (
+                    !groupedData[key]
+                ) {
+
+                    groupedData[key] = [];
+
+                }
+
+                groupedData[key].push(r);
+
+            }
+        );
+
+    }
+
+    /*
+     * CREATE NORMAL TABLES
+     */
+
+    Object.keys(
+        groupedData
+    )
+        .sort()
+        .forEach(
+            key => {
+
+                let title;
+
+                if (
+                    key === 'ALL STOCK'
+                ) {
+
+                    title =
+                        customTitle ||
+                        'ALL STOCK SUMMARY';
+
+                }
+
+                else {
+
+                    const parts =
+                        key.split('|');
+
+                    const model =
+                        parts[0];
+
+                    const yr =
+                        parts[1] || '';
+
+                    title =
+                        customTitle ||
+                        `${model} ${yr} MODEL STOCK`;
+
+                }
+
+                const section =
+                    document.createElement(
+                        'div'
+                    );
+
+                section.className =
+                    'summary-sheet';
+
+                let html = `
+
+                    <div class="title">
+                        ${escapeHtml(title)}
+                    </div>
+
+                    <div class="table-wrapper">
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+
+                                <th>SNo</th>
+
+                                ${
+                                    uploadMode.value === 'multiple'
+                                        ? '<th>Source File</th>'
+                                        : ''
+                                }
+
+                                <th>Subdealer</th>
+
+                                <th>Vehicle</th>
+
+                                <th>Chassis Number</th>
+
+                                <th>Engine Number</th>
+
+                                <th>Colour</th>
+
+                                <th>Year Of Model</th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                `;
+
+                groupedData[key]
+                    .forEach(
+                        (r, i) => {
+
+                            const chassis =
+                                String(
+                                    r.chassis || ''
+                                )
+                                    .trim()
+                                    .toUpperCase();
+
+                            const isDuplicate =
+                                chassisCount[
+                                    chassis
+                                ] > 1;
+
+                            const color =
+                                getSourceColor(
+                                    r.sourceFile
+                                );
+
+                            const sourceStyle =
+                                uploadMode.value === 'multiple'
+                                    ? `
+                                        background:${color.background};
+                                        color:${color.text};
+                                        border-left:4px solid ${color.border};
+                                    `
+                                    : '';
+
+                            html += `
+
+                                <tr
+                                    class="${
+                                        isDuplicate
+                                            ? 'duplicate-row'
+                                            : ''
+                                    }"
+                                >
+
+                                    <td>
+                                        ${i + 1}
+                                    </td>
+
+                                    ${
+                                        uploadMode.value === 'multiple'
+                                            ? `
+                                                <td
+                                                    class="source-file-cell"
+                                                    style="${sourceStyle}"
+                                                >
+                                                    ${escapeHtml(r.sourceFile)}
+                                                </td>
+                                            `
+                                            : ''
+                                    }
+
+                                    <td>
+                                        ${escapeHtml(r.subdealer)}
+                                    </td>
+
+                                    <td>
+                                        ${escapeHtml(r.vehicle)}
+                                    </td>
+
+                                    <td>
+                                        ${escapeHtml(r.chassis)}
+                                    </td>
+
+                                    <td>
+                                        ${escapeHtml(r.engine)}
+                                    </td>
+
+                                    <td>
+                                        ${escapeHtml(r.colour)}
+                                    </td>
+
+                                    <td>
+                                        ${escapeHtml(r.year)}
+                                    </td>
+
+                                </tr>
+
+                            `;
+
+                        }
+                    );
+
+                html += `
+
+                            <tr
+                                style="
+                                    font-weight:bold;
+                                    background:#ede9fe;
+                                "
+                            >
+
+                                <td
+                                    colspan="${
+                                        uploadMode.value === 'multiple'
+                                            ? 7
+                                            : 6
+                                    }"
+                                >
+                                    TOTAL STOCK
+                                </td>
+
+                                <td>
+                                    ${groupedData[key].length}
+                                </td>
+
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                    </div>
+
+                `;
+
+                section.innerHTML =
+                    html;
+
+                output.appendChild(
+                    section
+                );
+
+            }
+        );
+
+}
+
+
+/* =========================================================
+   PIVOT FIELD VALUE
+========================================================= */
+
+function getPivotFieldValue(
+    row,
+    field
+) {
+
+    switch (field) {
+
+        case 'subdealer':
+            return row.subdealer || '';
+
+        case 'vehicle':
+            return row.vehicle || '';
+
+        case 'model':
+            return row.model || '';
+
+        case 'chassis':
+            return row.chassis || '';
+
+        case 'engine':
+            return row.engine || '';
+
+        case 'colour':
+            return row.colour || '';
+
+        case 'year':
+            return row.year || '';
+
+        default:
+            return '';
+
+    }
+
+}
+
+
+/* =========================================================
+   PIVOT FIELD LABEL
+========================================================= */
+
+function getPivotFieldLabel(field) {
+
+    const labels = {
+
+        subdealer: 'Subdealer',
+
+        vehicle: 'Vehicle',
+
+        model: 'Model',
+
+        chassis: 'Chassis Number',
+
+        engine: 'Engine Number',
+
+        colour: 'Colour',
+
+        year: 'Year Of Model'
+
+    };
+
+    return (
+        labels[field] ||
+        field
+    );
+
+}
+
+
+/* =========================================================
+   GET PIVOT FILES
+========================================================= */
+
+function getPivotFiles(rows) {
+
+    /*
+     * Use upload order first.
+     */
+    const uploadedNames =
+        uploadedFiles.map(
+            item =>
+                item.file.name
+        );
+
+    /*
+     * Add any source names that
+     * exist in rows but aren't in
+     * uploadedFiles.
+     */
+    const rowNames =
+        [
+            ...new Set(
+                rows
+                    .map(
+                        r =>
+                            r.sourceFile
+                    )
+                    .filter(Boolean)
+            )
+        ];
+
+    const result = [];
+
+    uploadedNames.forEach(
+        name => {
+
+            if (
+                !result.includes(name)
+            ) {
+
+                result.push(name);
+
+            }
+
+        }
+    );
+
+    rowNames.forEach(
+        name => {
+
+            if (
+                !result.includes(name)
+            ) {
+
+                result.push(name);
+
+            }
+
+        }
+    );
+
+    return result;
+
+}
+
+
+/* =========================================================
+   GENERATE PIVOT REPORT
+========================================================= */
+
+function generatePivotReport(
+    rows,
+    customTitle
+) {
+
+    const field =
+        pivotRowField.value;
+
+    const fieldLabel =
+        getPivotFieldLabel(
+            field
+        );
+
+    const files =
+        getPivotFiles(rows);
+
+    /*
+     * Build unique row labels.
+     */
+    const rowLabels =
+        [
+            ...new Set(
+                rows.map(
+                    r =>
+                        String(
+                            getPivotFieldValue(
+                                r,
+                                field
+                            )
+                        ).trim() ||
+                        '(Blank)'
+                )
+            )
+        ]
+        .sort(
+            (a, b) =>
+                a.localeCompare(
+                    b,
+                    undefined,
+                    {
+                        numeric: true,
+                        sensitivity: 'base'
+                    }
+                )
+        );
+
+    /*
+     * Build matrix.
+     */
+    const matrix = [];
+
+    const fileTotals = {};
+
+    files.forEach(
+        file => {
+            fileTotals[file] = 0;
+        }
+    );
+
+    let grandTotal = 0;
+
+    rowLabels.forEach(
+        rowLabel => {
+
+            const rowObject = {
+
+                label: rowLabel,
+
+                counts: {},
+
+                total: 0
+
+            };
+
+            files.forEach(
+                file => {
+
+                    rowObject.counts[file] = 0;
+
+                }
+            );
+
+            rows.forEach(
+                row => {
+
+                    const value =
+                        String(
+                            getPivotFieldValue(
+                                row,
+                                field
+                            )
+                        ).trim() ||
+                        '(Blank)';
+
+                    if (
+                        value !== rowLabel
+                    ) {
+                        return;
+                    }
+
+                    const file =
+                        row.sourceFile ||
+                        'Uploaded File';
+
+                    if (
+                        !Object.prototype.hasOwnProperty.call(
+                            rowObject.counts,
+                            file
+                        )
+                    ) {
+
+                        rowObject.counts[file] = 0;
+
+                    }
+
+                    rowObject.counts[file]++;
+
+                    rowObject.total++;
+
+                }
+            );
+
+            files.forEach(
+                file => {
+
+                    fileTotals[file] +=
+                        rowObject.counts[file] || 0;
+
+                }
+            );
+
+            grandTotal +=
+                rowObject.total;
+
+            matrix.push(
+                rowObject
+            );
+
+        }
+    );
+
+    /*
+     * Save pivot data for Excel export.
+     */
+    pivotData = {
+
+        field,
+
+        fieldLabel,
+
+        files,
+
+        matrix,
+
+        fileTotals,
+
+        grandTotal,
+
+        title:
+            customTitle ||
+            `PIVOT TABLE - ${fieldLabel}`
+
+    };
+
+    const section =
+        document.createElement(
+            'div'
+        );
+
+    section.className =
+        'summary-sheet';
+
+    let html = `
+
+        <div class="title">
+            ${escapeHtml(
+                pivotData.title
+            )}
+        </div>
+
+        <div class="table-wrapper">
+
+        <table class="pivot-table">
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        ${escapeHtml(fieldLabel)}
+                    </th>
+
+    `;
+
+    files.forEach(
+        file => {
+
+            const color =
+                getSourceColor(
+                    file
+                );
+
+            html += `
+
+                <th
+                    style="
+                        background:${color.background};
+                        color:${color.text};
+                        border-top:4px solid ${color.border};
+                    "
+                >
+                    ${escapeHtml(file)}
+                </th>
+
+            `;
+
+        }
+    );
 
     html += `
-      <tr style="${
-        isDuplicate
-          ? 'background:#ffe5e5;color:#b91c1c;font-weight:700;'
-          : ''
-      }">
-        <td>${i + 1}</td>
-        <td>${r.subdealer}</td>
-        <td>${r.vehicle}</td>
-        <td>${r.chassis}</td>
-        <td>${r.engine}</td>
-        <td>${r.colour}</td>
-        <td>${r.year}</td>
-      </tr>
+
+                    <th
+                        class="pivot-total-column"
+                    >
+                        Total
+                    </th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
     `;
-  });
 
-  html += `
-      <tr style="font-weight:bold;background:#ede9fe;">
-        <td colspan="6">TOTAL STOCK</td>
-        <td>${groupedData[key].length}</td>
-      </tr>
-      </tbody>
-    </table>
-  `;
+    matrix.forEach(
+        row => {
 
-  section.innerHTML = html;
-  output.appendChild(section);
+            html += `
 
-});
+                <tr>
 
+                    <td class="pivot-row-label">
+                        ${escapeHtml(row.label)}
+                    </td>
+
+            `;
+
+            files.forEach(
+                file => {
+
+                    const count =
+                        row.counts[file] || 0;
+
+                    const color =
+                        getSourceColor(
+                            file
+                        );
+
+                    html += `
+
+                        <td
+                            style="
+                                background:${color.background};
+                                color:${color.text};
+                                font-weight:700;
+                            "
+                        >
+                            ${count}
+                        </td>
+
+                    `;
+
+                }
+            );
+
+            html += `
+
+                    <td
+                        class="pivot-total-column"
+                    >
+                        ${row.total}
+                    </td>
+
+                </tr>
+
+            `;
+
+        }
+    );
+
+    /*
+     * TOTAL ROW
+     */
+    html += `
+
+                <tr
+                    class="pivot-grand-total"
+                >
+
+                    <td>
+                        TOTAL
+                    </td>
+
+    `;
+
+    files.forEach(
+        file => {
+
+            const color =
+                getSourceColor(
+                    file
+                );
+
+            html += `
+
+                <td
+                    style="
+                        background:${color.background};
+                        color:${color.text};
+                        font-weight:900;
+                    "
+                >
+                    ${fileTotals[file] || 0}
+                </td>
+
+            `;
+
+        }
+    );
+
+    html += `
+
+                    <td
+                        class="pivot-total-column"
+                    >
+                        ${grandTotal}
+                    </td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+        </div>
+
+    `;
+
+    section.innerHTML =
+        html;
+
+    output.appendChild(
+        section
+    );
 
 }
 
 
-// ========================================
-// DOWNLOAD ALL EXCEL FILES + MASTER WORKBOOK
-// ========================================
+/* =========================================================
+   EXCEL EXPORT
+========================================================= */
+
 async function downloadAllExcel() {
-  if (Object.keys(groupedData).length === 0) {
-    alert('No reports generated.');
-    return;
-  }
 
-  const zip = new JSZip();
+    if (
+        currentReportType === 'pivot'
+    ) {
 
-  // Master workbook containing all sheets
-  const masterWorkbook = XLSX.utils.book_new();
+        if (!pivotData) {
 
-  for (const [key, rows] of Object.entries(groupedData)) {
-    const [model, yr] = key.split('|');
+            alert(
+                'No pivot report generated.'
+            );
 
-    const sheetData = rows.map((r, i) => ({
-      SNo: i + 1,
-      Subdealer: r.subdealer,
-      Vehicle: r.vehicle,
-      'Chassis Number': r.chassis,
-      'Engine Number': r.engine,
-      Colour: r.colour,
-      'Year Of Model': r.year
-    }));
+            return;
 
-    // Create worksheet
-    const ws = XLSX.utils.json_to_sheet(sheetData);
+        }
 
-    // -----------------------------
-    // Individual Excel file
-    // -----------------------------
-    const singleWb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(singleWb, ws, 'Summary');
+        await downloadPivotExcel();
 
-    const singleFile = XLSX.write(singleWb, {
-      bookType: 'xlsx',
-      type: 'array'
-    });
+        return;
 
-    zip.file(`${model}_${yr}.xlsx`, singleFile);
+    }
 
-    // -----------------------------
-    // Add to master workbook
-    // -----------------------------
-    let sheetName = `${model}_${yr}`;
-    sheetName = sheetName.substring(0, 31); // Excel limit
+    if (
+        Object.keys(
+            groupedData
+        ).length === 0
+    ) {
 
-    XLSX.utils.book_append_sheet(
-      masterWorkbook,
-      ws,
-      sheetName
-    );
-  }
+        alert(
+            'No reports generated.'
+        );
 
-  // Add master workbook to ZIP
-  const masterArray = XLSX.write(masterWorkbook, {
-    bookType: 'xlsx',
-    type: 'array'
-  });
+        return;
 
-  zip.file('All_Stock_Summaries.xlsx', masterArray);
+    }
 
-  // Generate ZIP
-  const blob = await zip.generateAsync({
-    type: 'blob'
-  });
+    const zip =
+        new JSZip();
 
-  saveBlob(blob, 'Stock_Summaries_Excel.zip');
-}
+    const masterWorkbook =
+        XLSX.utils.book_new();
 
+    const usedSheetNames =
+        new Set();
 
-// ========================================
-// DOWNLOAD PDF ZIP + COMBINED PDF
-// ========================================
+    for (
+        const [
+            key,
+            rows
+        ]
+        of Object.entries(
+            groupedData
+        )
+    ) {
 
-async function downloadAllPDF() {
-  if (Object.keys(groupedData).length === 0) {
-    alert('No reports generated.');
-    return;
-  }
+        const parts =
+            key.split('|');
 
-  const zip = new JSZip();
-  const sections = document.querySelectorAll('.summary-sheet');
-  const { jsPDF } = window.jspdf;
+        const model =
+            parts[0];
 
-  const combinedPdf = new jsPDF({
-    orientation: 'landscape',
-    unit: 'pt',
-    format: 'a4'
-  });
+        const yr =
+            parts[1] || '';
 
-  for (let i = 0; i < sections.length; i++) {
-    const section = sections[i];
+        const sheetData =
+            rows.map(
+                (r, i) => {
 
-    const title = section.querySelector('.title')
-      .textContent
-      .replace(/[\\/:*?"<>|]/g, '_');
+                    const item = {
 
-    const canvas = await html2canvas(section, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff'
-    });
+                        SNo:
+                            i + 1,
 
-    const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                        Subdealer:
+                            r.subdealer,
 
-    const pageWidth = 842;
-    const pageHeight = 595;
+                        Vehicle:
+                            r.vehicle,
 
-    const ratio = Math.min(
-      pageWidth / canvas.width,
-      pageHeight / canvas.height
-    );
+                        'Chassis Number':
+                            r.chassis,
 
-    const imgWidth = canvas.width * ratio;
-    const imgHeight = canvas.height * ratio;
+                        'Engine Number':
+                            r.engine,
 
-    const x = (pageWidth - imgWidth) / 2;
-    const y = (pageHeight - imgHeight) / 2;
+                        Colour:
+                            r.colour,
 
-    // Individual PDF
-    const singlePdf = new jsPDF({
-      orientation: 'landscape',
-      unit: 'pt',
-      format: 'a4'
-    });
+                        'Year Of Model':
+                            r.year
 
-    singlePdf.addImage(
-      imgData,
-      'JPEG',
-      x,
-      y,
-      imgWidth,
-      imgHeight
-    );
+                    };
+
+                    if (
+                        uploadMode.value ===
+                        'multiple'
+                    ) {
+
+                        item[
+                            'Source File'
+                        ] =
+                            r.sourceFile;
+
+                    }
+
+                    return item;
+
+                }
+            );
+
+        const ws =
+            XLSX.utils.json_to_sheet(
+                sheetData
+            );
+
+        /*
+         * Individual workbook
+         */
+        const singleWb =
+            XLSX.utils.book_new();
+
+        XLSX.utils.book_append_sheet(
+            singleWb,
+            ws,
+            'Summary'
+        );
+
+        const singleFile =
+            XLSX.write(
+                singleWb,
+                {
+                    bookType: 'xlsx',
+                    type: 'array'
+                }
+            );
+
+        const safeModel =
+            sanitizeFilename(
+                model
+            );
+
+        zip.file(
+            `${safeModel}_${yr}.xlsx`,
+            singleFile
+        );
+
+        /*
+         * Master workbook
+         */
+        let sheetName =
+            `${model}_${yr}`;
+
+        sheetName =
+            sanitizeSheetName(
+                sheetName
+            );
+
+        let baseSheetName =
+            sheetName;
+
+        let count = 1;
+
+        while (
+            usedSheetNames.has(
+                sheetName
+            )
+        ) {
+
+            const suffix =
+                `_${count++}`;
+
+            sheetName =
+                baseSheetName
+                    .substring(
+                        0,
+                        31 - suffix.length
+                    ) +
+                suffix;
+
+        }
+
+        usedSheetNames.add(
+            sheetName
+        );
+
+        XLSX.utils.book_append_sheet(
+            masterWorkbook,
+            ws,
+            sheetName
+        );
+
+    }
+
+    const masterArray =
+        XLSX.write(
+            masterWorkbook,
+            {
+                bookType: 'xlsx',
+                type: 'array'
+            }
+        );
 
     zip.file(
-      `${title}.pdf`,
-      singlePdf.output('arraybuffer')
+        'All_Stock_Summaries.xlsx',
+        masterArray
     );
 
-    // Combined PDF
-    if (i > 0) combinedPdf.addPage();
+    const blob =
+        await zip.generateAsync(
+            {
+                type: 'blob'
+            }
+        );
 
-    combinedPdf.addImage(
-      imgData,
-      'JPEG',
-      x,
-      y,
-      imgWidth,
-      imgHeight
+    saveBlob(
+        blob,
+        'Stock_Summaries_Excel.zip'
     );
-  }
 
-  zip.file(
-    'All_Stock_Summaries.pdf',
-    combinedPdf.output('arraybuffer')
-  );
-
-  const blob = await zip.generateAsync({ type: 'blob' });
-  saveBlob(blob, 'Stock_Summaries_PDF.zip');
 }
 
 
-// Save file
-function saveBlob(blob, filename) {
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+/* =========================================================
+   PIVOT EXCEL
+========================================================= */
+
+async function downloadPivotExcel() {
+
+    const zip =
+        new JSZip();
+
+    const workbook =
+        XLSX.utils.book_new();
+
+    const sheetData = [];
+
+    /*
+     * Header
+     */
+    const header = [
+        pivotData.fieldLabel,
+        ...pivotData.files,
+        'Total'
+    ];
+
+    sheetData.push(
+        header
+    );
+
+    /*
+     * Rows
+     */
+    pivotData.matrix.forEach(
+        row => {
+
+            sheetData.push(
+                [
+                    row.label,
+
+                    ...pivotData.files.map(
+                        file =>
+                            row.counts[file] || 0
+                    ),
+
+                    row.total
+                ]
+            );
+
+        }
+    );
+
+    /*
+     * Total row
+     */
+    sheetData.push(
+        [
+            'TOTAL',
+
+            ...pivotData.files.map(
+                file =>
+                    pivotData.fileTotals[file] || 0
+            ),
+
+            pivotData.grandTotal
+        ]
+    );
+
+    const ws =
+        XLSX.utils.aoa_to_sheet(
+            sheetData
+        );
+
+    /*
+     * Column widths
+     */
+    ws['!cols'] = [
+        {
+            wch: 25
+        },
+
+        ...pivotData.files.map(
+            file => ({
+                wch:
+                    Math.min(
+                        Math.max(
+                            String(file).length + 4,
+                            15
+                        ),
+                        35
+                    )
+            })
+        ),
+
+        {
+            wch: 15
+        }
+    ];
+
+    XLSX.utils.book_append_sheet(
+        workbook,
+        ws,
+        'Pivot Table'
+    );
+
+    const array =
+        XLSX.write(
+            workbook,
+            {
+                bookType: 'xlsx',
+                type: 'array'
+            }
+        );
+
+    const filename =
+        sanitizeFilename(
+            pivotData.title
+        );
+
+    zip.file(
+        `${filename}.xlsx`,
+        array
+    );
+
+    /*
+     * Also create master copy
+     */
+    zip.file(
+        'Pivot_Table_Master.xlsx',
+        array
+    );
+
+    const blob =
+        await zip.generateAsync(
+            {
+                type: 'blob'
+            }
+        );
+
+    saveBlob(
+        blob,
+        'Pivot_Table_Excel.zip'
+    );
+
 }
-   document.getElementById('colourFilter')
-  .addEventListener('change', generateReports);
+
+
+/* =========================================================
+   JPG EXPORT
+========================================================= */
+
+async function downloadAllJPG() {
+
+    if (
+        document.querySelectorAll(
+            '.summary-sheet'
+        ).length === 0
+    ) {
+
+        alert(
+            'No reports generated.'
+        );
+
+        return;
+
+    }
+
+    const zip =
+        new JSZip();
+
+    const sections =
+        document.querySelectorAll(
+            '.summary-sheet'
+        );
+
+    for (
+        let i = 0;
+        i < sections.length;
+        i++
+    ) {
+
+        const section =
+            sections[i];
+
+        const title =
+            sanitizeFilename(
+                section
+                    .querySelector(
+                        '.title'
+                    )
+                    .textContent
+            );
+
+        const canvas =
+            await html2canvas(
+                section,
+                {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor:
+                        '#ffffff'
+                }
+            );
+
+        const blob =
+            await new Promise(
+                resolve =>
+                    canvas.toBlob(
+                        resolve,
+                        'image/jpeg',
+                        0.95
+                    )
+            );
+
+        zip.file(
+            `${title}.jpg`,
+            blob
+        );
+
+    }
+
+    const zipBlob =
+        await zip.generateAsync(
+            {
+                type: 'blob'
+            }
+        );
+
+    saveBlob(
+        zipBlob,
+        'Stock_Summaries_JPG.zip'
+    );
+
+}
+
+
+/* =========================================================
+   PDF EXPORT
+========================================================= */
+
+async function downloadAllPDF() {
+
+    if (
+        document.querySelectorAll(
+            '.summary-sheet'
+        ).length === 0
+    ) {
+
+        alert(
+            'No reports generated.'
+        );
+
+        return;
+
+    }
+
+    const zip =
+        new JSZip();
+
+    const sections =
+        document.querySelectorAll(
+            '.summary-sheet'
+        );
+
+    const {
+        jsPDF
+    } = window.jspdf;
+
+    const combinedPdf =
+        new jsPDF(
+            {
+                orientation:
+                    'landscape',
+
+                unit: 'pt',
+
+                format: 'a4'
+            }
+        );
+
+    for (
+        let i = 0;
+        i < sections.length;
+        i++
+    ) {
+
+        const section =
+            sections[i];
+
+        const title =
+            sanitizeFilename(
+                section
+                    .querySelector(
+                        '.title'
+                    )
+                    .textContent
+            );
+
+        const canvas =
+            await html2canvas(
+                section,
+                {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor:
+                        '#ffffff'
+                }
+            );
+
+        const imgData =
+            canvas.toDataURL(
+                'image/jpeg',
+                1.0
+            );
+
+        const pageWidth =
+            842;
+
+        const pageHeight =
+            595;
+
+        const ratio =
+            Math.min(
+                pageWidth /
+                    canvas.width,
+
+                pageHeight /
+                    canvas.height
+            );
+
+        const imgWidth =
+            canvas.width *
+            ratio;
+
+        const imgHeight =
+            canvas.height *
+            ratio;
+
+        const x =
+            (
+                pageWidth -
+                imgWidth
+            ) / 2;
+
+        const y =
+            (
+                pageHeight -
+                imgHeight
+            ) / 2;
+
+        /*
+         * Individual PDF
+         */
+        const singlePdf =
+            new jsPDF(
+                {
+                    orientation:
+                        'landscape',
+
+                    unit: 'pt',
+
+                    format: 'a4'
+                }
+            );
+
+        singlePdf.addImage(
+            imgData,
+            'JPEG',
+            x,
+            y,
+            imgWidth,
+            imgHeight
+        );
+
+        zip.file(
+            `${title}.pdf`,
+            singlePdf.output(
+                'arraybuffer'
+            )
+        );
+
+        /*
+         * Combined PDF
+         */
+        if (i > 0) {
+            combinedPdf.addPage();
+        }
+
+        combinedPdf.addImage(
+            imgData,
+            'JPEG',
+            x,
+            y,
+            imgWidth,
+            imgHeight
+        );
+
+    }
+
+    zip.file(
+        'All_Stock_Summaries.pdf',
+        combinedPdf.output(
+            'arraybuffer'
+        )
+    );
+
+    const blob =
+        await zip.generateAsync(
+            {
+                type: 'blob'
+            }
+        );
+
+    saveBlob(
+        blob,
+        'Stock_Summaries_PDF.zip'
+    );
+
+}
+
+
+/* =========================================================
+   SAVE BLOB
+========================================================= */
+
+function saveBlob(
+    blob,
+    filename
+) {
+
+    const link =
+        document.createElement(
+            'a'
+        );
+
+    link.href =
+        URL.createObjectURL(
+            blob
+        );
+
+    link.download =
+        filename;
+
+    document.body.appendChild(
+        link
+    );
+
+    link.click();
+
+    document.body.removeChild(
+        link
+    );
+
+    setTimeout(
+        () =>
+            URL.revokeObjectURL(
+                link.href
+            ),
+        1000
+    );
+
+}
+
+
+/* =========================================================
+   HTML ESCAPE
+========================================================= */
+
+function escapeHtml(value) {
+
+    return String(
+        value ?? ''
+    )
+        .replace(
+            /&/g,
+            '&amp;'
+        )
+        .replace(
+            /</g,
+            '&lt;'
+        )
+        .replace(
+            />/g,
+            '&gt;'
+        )
+        .replace(
+            /"/g,
+            '&quot;'
+        )
+        .replace(
+            /'/g,
+            '&#039;'
+        );
+
+}
+
+
+/* =========================================================
+   FILENAME SANITIZER
+========================================================= */
+
+function sanitizeFilename(
+    value
+) {
+
+    return String(
+        value || 'Report'
+    )
+        .trim()
+        .replace(
+            /[\\/:*?"<>|]/g,
+            '_'
+        )
+        .replace(
+            /\s+/g,
+            ' '
+        )
+        .substring(
+            0,
+            150
+        );
+
+}
+
+
+/* =========================================================
+   EXCEL SHEET NAME SANITIZER
+========================================================= */
+
+function sanitizeSheetName(
+    value
+) {
+
+    let name =
+        String(
+            value || 'Sheet'
+        )
+            .replace(
+                /[\\\/\?\*\[\]\:]/g,
+                '_'
+            )
+            .trim();
+
+    if (!name) {
+        name = 'Sheet';
+    }
+
+    return name.substring(
+        0,
+        31
+    );
+
+}
+
+
+/* =========================================================
+   FILTER AUTO GENERATION
+========================================================= */
+
+[
+    'yearFilter',
+    'branchFilter',
+    'vehicleFilter',
+    'colourFilter'
+].forEach(
+    id => {
+
+        document
+            .getElementById(id)
+            .addEventListener(
+                'change',
+                generateReports
+            );
+
+    }
+);
+
+
+/* =========================================================
+   INITIAL STATE
+========================================================= */
+
+pivotFieldGroup.classList.add(
+    'hidden'
+);
+
+updateDropZoneText();
+
 </script>
 
 </body>
